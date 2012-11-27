@@ -4,14 +4,15 @@ require 'oauth'
 # Fill the keys and secrets you retrieved after registering your app
 api_key = '78imlmkvuvhi'
 api_secret = 'BbIEylD3TBcAvVeR'
-user_token = '65d96d9f-aa71-466a-bb2c-bdd589c49b5c'
-user_secret = '4f8b3bc6-a479-4510-b58f-edd0b5cd246b'
+user_token = '7511b9ec-237a-4790-9707-f0a16b48d721'
+user_secret = 'e46f0dd5-1a33-4615-978f-e0fb27859a0b'
 
 # Specify LinkedIn API endpoint
 configuration = { :site => 'https://api.linkedin.com',
   # This tells OAuth what URL to use to gain authorization
   :authorize_path => '/uas/oauth/authenticate',
   # THis tells OAuth what URL to use to retrieve a request token
+  #   In order to request more specific permisions we append ?scope=r_network
   :request_token_path => '/uas/oauth/requestToken',
   # What URL to get an accessToken
   :access_token_path => '/uas/oauth/accessToken' }
@@ -23,12 +24,17 @@ consumer = OAuth::Consumer.new(api_key, api_secret, configuration)
 access_token = OAuth::AccessToken.new(consumer, user_token, user_secret)
 
 # Make call to LinkedIn to retrieve your own profile
-response = access_token.get("http://api.linkedin.com/v1/people/~")
+fields = ['first-name', 'headline', 'num-connections'].join(',')
+response = access_token.get("http://api.linkedin.com/v1/people/~:(#{fields})")
 puts response
 
+connections = access_token.get("http://api.linkedin.com/v1/people/~/connections:(first-name,last-name,id,location)")
+#Add {'x-li-format' => 'json} to retrieve json instead
+
+puts connections
 
 
-
+#TODO: Handle expired access tokens.
 
 
 ########## This code will allow us to retrieve arbitrary profiles  ################
