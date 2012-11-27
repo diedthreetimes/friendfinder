@@ -12,8 +12,8 @@ configuration = { :site => 'https://api.linkedin.com',
   # This tells OAuth what URL to use to gain authorization
   :authorize_path => '/uas/oauth/authenticate',
   # THis tells OAuth what URL to use to retrieve a request token
-  #   In order to request more specific permisions we append ?scope=r_network
-  :request_token_path => '/uas/oauth/requestToken',
+  #   In order to request more specific permisions we append ?scope=r_#{permission}
+  :request_token_path => '/uas/oauth/requestToken?scope=r_network',
   # What URL to get an accessToken
   :access_token_path => '/uas/oauth/accessToken' }
 
@@ -59,4 +59,9 @@ access_token = request_token.get_access_token(:oauth_verifier => verifier)
 # API call to retrieve profile using access token
 response = access_token.get("http://api.linkedin.com/v1/people/~")
 puts response
+
+connections = access_token.get("http://api.linkedin.com/v1/people/~/connections:(first-name,last-name,id,location)")
+#Add {'x-li-format' => 'json} to retrieve json instead
+puts connections
 =end
+
