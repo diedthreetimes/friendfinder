@@ -6,6 +6,7 @@ import com.sprout.finderlib.DeviceList;
 import com.sprout.finderlib.PrivateProtocol;
 import com.sprout.finderlib.BluetoothServiceLogger;
 import com.sprout.finderlib.BluetoothService;
+import com.sprout.finderlib.CommunicationService;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -37,10 +38,14 @@ public class FriendFinderActivity extends Activity {
 	
 	private BluetoothAdapter mBluetoothAdapter = null;
     // Member object for the communication services
-    private BluetoothService mMessageService = null; 
+    private CommunicationService mMessageService = null; 
     
     // Name of the connected device
     private String mConnectedDeviceName = null;
+    
+    // UI elements
+    private Button mBtButton;
+    private Button mWifiButton;
 	
     /** Called when the activity is first created. */
     @Override
@@ -71,12 +76,12 @@ public class FriendFinderActivity extends Activity {
           // If BT is not on, request that it be enabled.
           // setupChat() will then be called during onActivityResult
           if (!mBluetoothAdapter.isEnabled()) {          
-              // Initialize the send button with a listener that for click events
+              // Enable the bluetooth adapter
               Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
               startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
           // Otherwise, setup the chat session
           } else {
-              if (mMessageService == null) setupChat();
+              if (mMessageService == null) setupApp();
           }
   	}
   	
@@ -97,19 +102,44 @@ public class FriendFinderActivity extends Activity {
           }
       }
   	
-  	private void setupChat() {
-          Log.d(TAG, "setupChat()");  
+  	private void setupApp() {
+          Log.d(TAG, "setupApp()");  
 
-          // Initialize the BluetoothService to perform bluetooth connections
-          //TODO: update this to use an interace instead
-          //      This should alow us to move this out of this class
-          if(benchmarkBandwidth){
-          	mMessageService = new BluetoothServiceLogger(this, new mHandler(this));
-          }else {
-          	mMessageService = new BluetoothService(this, new mHandler(this));
-          }
+          mBtButton = (Button) findViewById(R.id.bt_button);
+          mBtButton.setOnClickListener(new OnClickListener() {
+              public void onClick(View v) {
+                btConnect();
+                
+                // Initialize the BluetoothService to perform bluetooth connections
+                //TODO: update this to use an interace instead
+                //      This should alow us to move this out of this class
+                if(benchmarkBandwidth){
+                	mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+                }else {
+                	mMessageService =  new BluetoothService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+                }
+              }
+          });
           
-          ensureDiscoverable(); //added for the test
+          mWifiButton = (Button) findViewById(R.id.wifi_button);
+          mWifiButton.setOnClickListener(new OnClickListener() {
+              public void onClick(View v) {
+                  wifiConnect();
+                  
+
+                  if(benchmarkBandwidth){
+                	 // TODO: Fix the logger mechanisim to work for any service
+                  	//mMessageService = new WifiServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+                  }else {
+                  	//mMessageService = new WifiService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+                  }
+                }
+            });
+          
+          
+          
+          
+          
       }
 
   	
@@ -140,16 +170,26 @@ public class FriendFinderActivity extends Activity {
           
       }
       
-      private void ensureDiscoverable() {
-          if(D) Log.d(TAG, "ensure discoverable");
+      private void btConnect() {
+          if(D) Log.d(TAG, "bluetooth connect");
           
           // Commented out for test
-          //if (mBluetoothAdapter.getScanMode() !=
-          //    BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+          if (mBluetoothAdapter.getScanMode() !=
+              BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
               Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
               discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
               startActivityForResult(discoverableIntent, REQUEST_DISCOVERABLE);
-          //}
+          }
+          else{
+        	// Launch the DeviceListActivity to see devices and do scan
+    	    Intent serverIntent = new Intent(this, DeviceList.class);
+    	    startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+          }
+      }
+      
+      private void wifiConnect() {
+    	  // TODO: We probably need to turn wifi on here.
+      
       }
       
    // The Handler that gets information back from the BluetoothService
@@ -221,10 +261,12 @@ public class FriendFinderActivity extends Activity {
               break;
           case REQUEST_ENABLE_BT:
               // When the request to enable Bluetooth returns
+        	  
+        	  // TODO: This needs to be refactored into the bluetooth service
+        	  //   We do not need to close the app if bluetooth isn't enabled
               if (resultCode == Activity.RESULT_OK) {
                   // Bluetooth is now enabled, so set up a chat session
-                  setupChat();
-                  
+                  setupApp();
                   
               } else {
                   // User did not enable Bluetooth or an error occurred
@@ -256,8 +298,8 @@ public class FriendFinderActivity extends Activity {
           String address = data.getExtras()
               .getString(DeviceList.EXTRA_DEVICE_ADDRESS);
           // Get the BluetoothDevice object
-          BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+        
           // Attempt to connect to the device
-          mMessageService.connect(device, secure);
+          mMessageService.connect(address, secure);
       }
 }
