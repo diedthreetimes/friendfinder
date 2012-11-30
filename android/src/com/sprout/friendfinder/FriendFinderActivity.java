@@ -95,9 +95,12 @@ public class FriendFinderActivity extends Activity {
           // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
           if (mMessageService != null) {
               // Only if the state is STATE_NONE, do we know that we haven't started already
-              if (mMessageService.getState() == BluetoothService.STATE_NONE) {
+              if (mMessageService.getState() == CommunicationService.STATE_NONE) {
                 // Start the Bluetooth chat services
                 mMessageService.start();
+              }
+              else {
+            	  mMessageService.resume();
               }
           }
       }
@@ -147,6 +150,9 @@ public class FriendFinderActivity extends Activity {
       public synchronized void onPause() {
           super.onPause();
           if(D) Log.e(TAG, "- ON PAUSE -");
+          
+          if(mMessageService != null)
+        	  mMessageService.pause();
       }
 
       @Override
