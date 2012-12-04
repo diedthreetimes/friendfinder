@@ -7,6 +7,7 @@ import com.sprout.finderlib.PrivateProtocol;
 import com.sprout.finderlib.BluetoothServiceLogger;
 import com.sprout.finderlib.BluetoothService;
 import com.sprout.finderlib.CommunicationService;
+import com.sprout.finderlib.WifiService;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -18,6 +19,8 @@ import android.content.DialogInterface.OnCancelListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -26,9 +29,9 @@ import android.widget.Toast;
 
 public class FriendFinderActivity extends Activity {
 	
-	private static final String TAG = "ConductTest";
+	private static final String TAG = "MainActivity";
     private static final boolean D = true;
-    private static final boolean benchmarkBandwidth = true;
+    private static final boolean benchmarkBandwidth = false;
     
     // Intent request codes
     //TODO: Refactor this out
@@ -99,9 +102,9 @@ public class FriendFinderActivity extends Activity {
                 // Start the Bluetooth chat services
                 mMessageService.start();
               }
-              else {
-            	  mMessageService.resume();
-              }
+              //else {
+            	//  mMessageService.resume();
+              //}
           }
       }
   	
@@ -112,15 +115,6 @@ public class FriendFinderActivity extends Activity {
           mBtButton.setOnClickListener(new OnClickListener() {
               public void onClick(View v) {
                 btConnect();
-                
-                // Initialize the BluetoothService to perform bluetooth connections
-                //TODO: update this to use an interace instead
-                //      This should alow us to move this out of this class
-                if(benchmarkBandwidth){
-                	mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
-                }else {
-                	mMessageService =  new BluetoothService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
-                }
               }
           });
           
@@ -128,14 +122,6 @@ public class FriendFinderActivity extends Activity {
           mWifiButton.setOnClickListener(new OnClickListener() {
               public void onClick(View v) {
                   wifiConnect();
-                  
-
-                  if(benchmarkBandwidth){
-                	 // TODO: Fix the logger mechanisim to work for any service
-                  	//mMessageService = new WifiServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
-                  }else {
-                  	//mMessageService = new WifiService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
-                  }
                 }
             });
           
@@ -151,8 +137,8 @@ public class FriendFinderActivity extends Activity {
           super.onPause();
           if(D) Log.e(TAG, "- ON PAUSE -");
           
-          if(mMessageService != null)
-        	  mMessageService.pause();
+          //if(mMessageService != null)
+          //  mMessageService.pause();
       }
 
       @Override
@@ -179,7 +165,15 @@ public class FriendFinderActivity extends Activity {
       private void btConnect() {
           if(D) Log.d(TAG, "bluetooth connect");
           
-          // Commented out for test
+          // Initialize the CommunicationService to perform bluetooth connections
+          //TODO: update this to use an interace instead
+          //      This should alow us to move this out of this class
+          if(benchmarkBandwidth){
+          	mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+          }else {
+          	mMessageService =  new BluetoothService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+          }
+          
           if (mBluetoothAdapter.getScanMode() !=
               BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
               Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
@@ -188,13 +182,28 @@ public class FriendFinderActivity extends Activity {
           }
           else{
         	// Launch the DeviceListActivity to see devices and do scan
-    	    Intent serverIntent = new Intent(this, DeviceList.class);
-    	    startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+        	launchDeviceList();
           }
       }
       
       private void wifiConnect() {
-    	  // TODO: We probably need to turn wifi on here.
+    	  // TODO: How do we check if we already have permissions.
+              // Since this is the system wireless settings activity, it's                                                                               
+              // We will be notified by WiFiDeviceBroadcastReceiver instead.                     
+
+    	  //TODO: Can this be done differently if we are notified by the broadcast receiver
+    	  // We need communicate state via the handler
+          //startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+
+    	  
+    	  
+    	  if(benchmarkBandwidth){
+    		  //mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+          }else {
+        	  mMessageService =  new WifiService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+          }
+            
+    	  launchDeviceList();
       
       }
       
@@ -214,7 +223,7 @@ public class FriendFinderActivity extends Activity {
               case   BluetoothService.MESSAGE_STATE_CHANGE:
                   if(D) Log.i(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
                   switch (msg.arg1) {
-                  case BluetoothService.STATE_CONNECTED:
+                  case CommunicationService.STATE_CONNECTED:
                   	target.finishActivity( REQUEST_CONNECT_DEVICE_SECURE );
                       
                   	//setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
@@ -222,29 +231,29 @@ public class FriendFinderActivity extends Activity {
                   	//if(connectionIndicator != null) connectionIndicator.dismiss();
                   	if(D) Log.d(TAG,"mStartTest + mOther: false");
                       break;
-                  case BluetoothService.STATE_CONNECTING:
+                  case CommunicationService.STATE_CONNECTING:
                       //setStatus(R.string.title_connecting);
                       break;
-                  case BluetoothService.STATE_LISTEN:
-                  case BluetoothService.STATE_NONE:
+                  case CommunicationService.STATE_LISTEN:
+                  case CommunicationService.STATE_NONE:
                       //setStatus(R.string.title_not_connected);
                       break;
                   }
                   break;
-              case BluetoothService.MESSAGE_READ:
+              case CommunicationService.MESSAGE_READ:
                   break;
-              case BluetoothService.MESSAGE_DEVICE_NAME:
+              case CommunicationService.MESSAGE_DEVICE_NAME:
                   // save the connected device's name
                   target.mConnectedDeviceName = msg.getData().getString(BluetoothService.DEVICE_NAME);
                   Toast.makeText(target.getApplicationContext(), "Connected to "
                                  + target.mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                   break;      	    
-              case BluetoothService.MESSAGE_TOAST:
+              case CommunicationService.MESSAGE_TOAST:
                   // For the usability test we mute toasts
               	//Toast.makeText(getApplicationContext(), msg.getData().getString(BluetoothService.TOAST),
                   //               Toast.LENGTH_SHORT).show();
                   break;
-              case BluetoothService.MESSAGE_FAILED:
+              case CommunicationService.MESSAGE_FAILED:
               	// Reset the ui
               	//if(connectionIndicator != null) connectionIndicator.dismiss();
               	
@@ -285,16 +294,14 @@ public class FriendFinderActivity extends Activity {
           	if( resultCode == RESULT_CANCELED ){
           		// for now we do nothing
           	}
-          	
-  	        // Launch the DeviceListActivity to see devices and do scan
-  	        Intent serverIntent = new Intent(this, DeviceList.class);
-  	        startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+          		
+          	launchDeviceList();
           }
       }
       
       private void connectDevice(Intent data, boolean secure) {
       	// Check that we're actually connected before trying anything
-          if (mMessageService.getState() == BluetoothService.STATE_CONNECTED) {
+          if (mMessageService.getState() == CommunicationService.STATE_CONNECTED) {
               Toast.makeText(this, R.string.already_connected, Toast.LENGTH_SHORT).show();
               return;
           }
@@ -303,9 +310,26 @@ public class FriendFinderActivity extends Activity {
           // Get the device MAC address
           String address = data.getExtras()
               .getString(DeviceList.EXTRA_DEVICE_ADDRESS);
-          // Get the BluetoothDevice object
         
           // Attempt to connect to the device
           mMessageService.connect(address, secure);
+      }
+      
+      /**
+       * Start the device list activity. If no service is started has no affect.
+       */
+      private void launchDeviceList(){
+    	  if(mMessageService == null)
+    		  return;
+    	  
+    	 
+    	  Time now = new Time();
+    	  now.setToNow();
+  	
+    	  CommunicationService.com_transfers.put(now.format2445(), new WeakReference<CommunicationService>(mMessageService));
+    	  // Launch the DeviceListActivity to see devices and do scan
+    	  Intent serverIntent = new Intent(this, DeviceList.class);
+    	  serverIntent.putExtra(CommunicationService.EXTRA_SERVICE_TRANFER, now.format2445());
+    	  startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
       }
 }
