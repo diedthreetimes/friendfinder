@@ -193,6 +193,8 @@ public class FriendFinderActivity extends Activity {
 
     	  //TODO: Can this be done differently if we are notified by the broadcast receiver
     	  // We need communicate state via the handler
+    	  // Do we need this turned on ?
+    	 
           //startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
 
     	  
