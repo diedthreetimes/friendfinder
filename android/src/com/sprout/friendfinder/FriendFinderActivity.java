@@ -96,16 +96,16 @@ public class FriendFinderActivity extends Activity {
           // Performing this check in onResume() covers the case in which BT was
           // not enabled during onStart(), so we were paused to enable it...
           // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
-          if (mMessageService != null) {
+          //if (mMessageService != null) {
               // Only if the state is STATE_NONE, do we know that we haven't started already
-              if (mMessageService.getState() == CommunicationService.STATE_NONE) {
+          //    if (mMessageService.getState() == CommunicationService.STATE_NONE) {
                 // Start the Bluetooth chat services
-                mMessageService.start();
-              }
+          //      mMessageService.start();
+          //    }
               //else {
             	//  mMessageService.resume();
               //}
-          }
+          //}
       }
   	
   	private void setupApp() {
@@ -115,6 +115,7 @@ public class FriendFinderActivity extends Activity {
           mBtButton.setOnClickListener(new OnClickListener() {
               public void onClick(View v) {
                 btConnect();
+                mMessageService.start();
               }
           });
           
@@ -122,6 +123,7 @@ public class FriendFinderActivity extends Activity {
           mWifiButton.setOnClickListener(new OnClickListener() {
               public void onClick(View v) {
                   wifiConnect();
+                  mMessageService.start();
                 }
             });
           
