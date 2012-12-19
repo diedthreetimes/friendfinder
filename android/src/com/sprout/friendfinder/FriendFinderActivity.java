@@ -62,6 +62,8 @@ public class FriendFinderActivity extends Activity {
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
+        // TODO: Find a way to see if p2pwifi is supported
+        
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
             Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
@@ -76,6 +78,8 @@ public class FriendFinderActivity extends Activity {
           super.onStart();
           if(D) Log.e(TAG, "++ ON START ++");
 
+          // TODO: Find a way in 4.0 to turn on wifi
+          
           // If BT is not on, request that it be enabled.
           // setupChat() will then be called during onActivityResult
           if (!mBluetoothAdapter.isEnabled()) {          
@@ -254,8 +258,8 @@ public class FriendFinderActivity extends Activity {
                   break;      	    
               case CommunicationService.MESSAGE_TOAST:
                   // For the usability test we mute toasts
-              	//Toast.makeText(getApplicationContext(), msg.getData().getString(BluetoothService.TOAST),
-                  //               Toast.LENGTH_SHORT).show();
+              	  Toast.makeText(target.getApplicationContext(), msg.getData().getString(BluetoothService.TOAST),
+                                 Toast.LENGTH_SHORT).show();
                   break;
               case CommunicationService.MESSAGE_FAILED:
               	// Reset the ui
