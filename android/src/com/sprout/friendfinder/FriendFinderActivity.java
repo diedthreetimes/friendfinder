@@ -131,7 +131,12 @@ public class FriendFinderActivity extends Activity {
                 }
             });
           
-          
+          Button sendButton = (Button) findViewById(R.id.send_button);
+          sendButton.setOnClickListener(new OnClickListener() {
+              public void onClick(View v) {
+                  mMessageService.write("Hello");
+                }
+            });
           
           
           
@@ -158,9 +163,8 @@ public class FriendFinderActivity extends Activity {
           super.onDestroy();
           
           if(D) Log.e(TAG, "--- ON DESTROY ---");
-          
-          // TODO: What if the system kills the mMessageService
-          // Stop the Bluetooth chat services
+                 
+          // Stop the message service
           if (mMessageService != null) {
           	mMessageService.stop();
           	mMessageService = null;
@@ -237,7 +241,10 @@ public class FriendFinderActivity extends Activity {
                   	//setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
            	
                   	//if(connectionIndicator != null) connectionIndicator.dismiss();
-                  	if(D) Log.d(TAG,"mStartTest + mOther: false");
+                  	//TODO: Start the protocol here
+                  	
+                  	
+                  	
                       break;
                   case CommunicationService.STATE_CONNECTING:
                       //setStatus(R.string.title_connecting);
@@ -249,16 +256,22 @@ public class FriendFinderActivity extends Activity {
                   }
                   break;
               case CommunicationService.MESSAGE_READ:
+            	  byte[] readBuf = (byte[]) msg.obj;
+                  // construct a string from the valid bytes in the buffer        
+                  String readMessage = new String(readBuf, 0, msg.arg1);
+
+            	  Toast.makeText(target.getApplicationContext(), "Message read " 
+            			  + readMessage, Toast.LENGTH_SHORT).show();
                   break;
               case CommunicationService.MESSAGE_DEVICE_NAME:
                   // save the connected device's name
-                  target.mConnectedDeviceName = msg.getData().getString(BluetoothService.DEVICE_NAME);
+                  target.mConnectedDeviceName = msg.getData().getString(CommunicationService.DEVICE_NAME);
                   Toast.makeText(target.getApplicationContext(), "Connected to "
                                  + target.mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                   break;      	    
               case CommunicationService.MESSAGE_TOAST:
                   // For the usability test we mute toasts
-              	  Toast.makeText(target.getApplicationContext(), msg.getData().getString(BluetoothService.TOAST),
+              	  Toast.makeText(target.getApplicationContext(), msg.getData().getString(CommunicationService.TOAST),
                                  Toast.LENGTH_SHORT).show();
                   break;
               case CommunicationService.MESSAGE_FAILED:

@@ -3,4 +3,8 @@
 
     <string name="app_name">FriendFinder</string>
 
+    <string name="Send">btn_send</string>
+
+    <string name="btn_send">Send</string>
+
 </resources>
