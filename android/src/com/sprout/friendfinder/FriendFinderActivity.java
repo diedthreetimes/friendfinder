@@ -2,8 +2,10 @@ package com.sprout.friendfinder;
 
 import java.lang.ref.WeakReference;
 
+import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
+import org.brickred.socialauth.android.SocialAuthError;
 
 import com.sprout.finderlib.DeviceList;
 import com.sprout.finderlib.PrivateProtocol;
@@ -77,7 +79,27 @@ public class FriendFinderActivity extends Activity {
         }
         
         // Add the social library
-        adapter = new SocialAuthAdapter(new ResponseListener());
+        adapter = new SocialAuthAdapter(new DialogListener() {
+
+			@Override
+			public void onCancel() {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onComplete(Bundle arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void onError(SocialAuthError arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+        	
+        });
                  
         // Add providers and enable button
         adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
