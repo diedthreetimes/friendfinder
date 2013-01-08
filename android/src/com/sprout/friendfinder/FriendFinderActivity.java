@@ -2,6 +2,9 @@ package com.sprout.friendfinder;
 
 import java.lang.ref.WeakReference;
 
+import org.brickred.socialauth.android.SocialAuthAdapter;
+import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
+
 import com.sprout.finderlib.DeviceList;
 import com.sprout.finderlib.PrivateProtocol;
 import com.sprout.finderlib.BluetoothServiceLogger;
@@ -49,6 +52,8 @@ public class FriendFinderActivity extends Activity {
     // UI elements
     private Button mBtButton;
     private Button mWifiButton;
+    
+    private SocialAuthAdapter adapter;
 	
     /** Called when the activity is first created. */
     @Override
@@ -70,6 +75,12 @@ public class FriendFinderActivity extends Activity {
             finish();
             return;
         }
+        
+        // Add the social library
+        adapter = new SocialAuthAdapter(new ResponseListener());
+                 
+        // Add providers and enable button
+        adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
     }
     
   //NOTE: This happens when an activity becomes visible
