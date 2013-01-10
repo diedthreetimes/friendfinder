@@ -1,7 +1,9 @@
 package com.sprout.friendfinder;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 
+import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
@@ -25,6 +27,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.View;
@@ -80,29 +83,31 @@ public class FriendFinderActivity extends Activity {
         
         // Add the social library
         adapter = new SocialAuthAdapter(new DialogListener() {
-
-			@Override
-			public void onCancel() {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onComplete(Bundle arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void onError(SocialAuthError arg0) {
-				// TODO Auto-generated method stub
-				
+        	@Override
+			public void onComplete(Bundle values) {
+				if(D) Log.d(TAG, "Authorization successful");
+				//Here we now have a provider
 			}
         	
+			@Override
+			public void onCancel() {
+				if(D) Log.d(TAG, "Cancel called");
+				
+
+			}			
+
+			@Override
+			public void onError(SocialAuthError er) {
+				if(D) Log.d(TAG, "Error", er);
+				
+			}
         });
                  
         // Add providers and enable button
         adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
+        
+        //TODO: This is probably not the place for this
+        adapter.authorize(this, Provider.LINKEDIN);
     }
     
   //NOTE: This happens when an activity becomes visible
@@ -164,12 +169,17 @@ public class FriendFinderActivity extends Activity {
                 }
             });
           
-          Button sendButton = (Button) findViewById(R.id.send_button);
-          sendButton.setOnClickListener(new OnClickListener() {
+          findViewById(R.id.send_button).setOnClickListener(new OnClickListener() {
               public void onClick(View v) {
                   mMessageService.write("Hello");
-                }
-            });
+              }
+          });
+          
+          findViewById(R.id.contacts_button).setOnClickListener(new OnClickListener() {
+              public void onClick(View v) {
+                  getContacts();
+              }
+          });
           
           
           
@@ -317,6 +327,30 @@ public class FriendFinderActivity extends Activity {
           }
       }};
       
+      public List<Contact> getContacts(){
+    	  
+    	  List<Contact> contactsList = adapter.getContactList();          
+          
+    	  if (contactsList != null && contactsList.size() > 0) 
+    	  {
+    	     for (Contact p : contactsList)
+    	     {
+    	          if (TextUtils.isEmpty(p.getFirstName()) && TextUtils.isEmpty(p.getLastName())) 
+    	          {                                                   
+    	              p.setFirstName(p.getDisplayName());
+    	          }
+    	                                                  
+    	          Log.d(TAG , "Display Name = " +  p.getDisplayName());
+    	          Log.d(TAG , "First Name   = " +  p.getFirstName());
+    	          Log.d(TAG , "Last Name    = " +  p.getLastName());
+    	          Log.d(TAG , "Contact ID   = " +  p.getId());
+    	          Log.d(TAG , "Profile URL  = " +  p.getProfileUrl());  
+    	                                                  
+    	     }    
+    	  }
+    	  
+    	  return contactsList;
+      }
       
       //Called when INTENT is returned
       public void onActivityResult(int requestCode, int resultCode, Intent data) {
