@@ -101,6 +101,11 @@ public class FriendFinderActivity extends Activity {
 				if(D) Log.d(TAG, "Error", er);
 				
 			}
+			
+			@Override
+			public void onBack(){
+				if(D) Log.d(TAG, "BACK");
+			}
         });
                  
         // Add providers and enable button
