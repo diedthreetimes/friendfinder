@@ -58,5 +58,7 @@ module CaServer
 
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
+
+    config.sig_key_location = 'app/keys/sig_key'
   end
 end
