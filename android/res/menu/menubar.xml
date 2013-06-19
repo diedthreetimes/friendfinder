@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/account" android:title="Account"></item>
+    <item android:id="@+id/privacy" android:title="Privacy"></item>
+    <item android:id="@+id/synchronization" android:title="Synchronization"></item>
+    <item android:id="@+id/connection" android:title="Connection"></item>
+    </menu>

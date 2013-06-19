@@ -123,7 +123,7 @@ private Activity mActivity;
 			Log.d("Social Contact Listener", e1.toString());
 		}
 		
-		Toast.makeText(mActivity, "Contact list saved", Toast.LENGTH_SHORT).show();
+		//Toast.makeText(mActivity, "Contact list saved", Toast.LENGTH_SHORT).show();
 		
 		
 		

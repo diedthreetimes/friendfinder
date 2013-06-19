@@ -46,7 +46,7 @@ public final class SocialProfileListener implements SocialAuthListener<org.brick
 		
 		Log.d("Social Profile Listener", "Your profile: \n");
 		Log.d("Social Profile Listener", "Your name: " + profile.getFirstName() + " " + profile.getLastName());
-		Toast.makeText(mActivity, "Your profile information is: " + profile.getFirstName() + " " + profile.getLastName(), Toast.LENGTH_SHORT).show();
+		//Toast.makeText(mActivity, "Your profile information is: " + profile.getFirstName() + " " + profile.getLastName(), Toast.LENGTH_SHORT).show();
 		
 		ProfileObject myProfile = new ProfileObject(profile.getFirstName(), profile.getLastName(), profile.getValidatedId());
 		

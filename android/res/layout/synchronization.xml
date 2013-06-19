@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="14dp"
+        android:layout_y="15dp"
+        android:text="Choose your synchronization settings:" />
+
+    <Button
+        android:id="@+id/button_synchronize"
+        android:layout_width="214dp"
+        android:layout_height="64dp"
+        android:layout_x="59dp"
+        android:layout_y="52dp"
+        android:drawableLeft="@drawable/but_sync"
+        android:onClick="syncnow"
+        android:text="Synchronize now" />
+
+    <Button
+        android:id="@+id/button_back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="121dp"
+        android:layout_y="380dp"
+        android:text="BACK" 
+        android:onClick="backtomain"/>
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="16dp"
+        android:layout_y="148dp"
+        android:text="Last synchronization:" />
+
+    <TextView
+        android:id="@+id/lastSyncText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="58dp"
+        android:layout_y="178dp"
+        android:text=" "
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+</AbsoluteLayout>

@@ -9,6 +9,8 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.sql.Timestamp;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,6 +40,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
@@ -48,9 +51,13 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.Time;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 //Ron: this class now implements also the NoticeCommonFriendsDialog interface so that we can get feedback here which button the user pressed when shown the dialog whether he wants to become friends with the peer or not
@@ -90,6 +97,15 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     CurrentPeer currentPeer;
     BigInteger Ra, Rb, N, e;
     List<BigInteger> zis;
+    List<BigInteger> yis;
+    
+    //keep track of state the PSI protocol currently is in
+    int state = 1;
+    int peerSetSize = 0;
+    List<BigInteger> peerSet;
+    BigInteger peerAuth;
+    List<BigInteger> T;
+    List<BigInteger> T2;
     
     
     ProfileObject myProfile;
@@ -97,9 +113,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     List<ProfileObject> contactList;
     AuthorizationObject authObj;
     
-     
-    //private ServerActivity serverActivity; //Ron: deprecated
-    //private Activity thisActivity; //Ron: deprecated //needed as the activity needs to be passed to the ServerActivity
+    //to store key-value pairs: 
+    SharedPreferences sharedPreference;
     
    
 	
@@ -172,8 +187,6 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         //TODO: This is probably not the place for this
         adapter.authorize(this, Provider.LINKEDIN);
         
-        
-        //thisActivity = this; //Ron: deprecated (was needed for the client-server implementation)
     }
     
   //NOTE: This happens when an activity becomes visible
@@ -194,6 +207,9 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           } else {
               if (mMessageService == null) setupApp();
           }
+          
+          
+          
   	}
   	
   	@Override
@@ -204,16 +220,16 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           // Performing this check in onResume() covers the case in which BT was
           // not enabled during onStart(), so we were paused to enable it...
           // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
-          //if (mMessageService != null) {
+        //  if (mMessageService != null) {
               // Only if the state is STATE_NONE, do we know that we haven't started already
           //    if (mMessageService.getState() == CommunicationService.STATE_NONE) {
                 // Start the Bluetooth chat services
-          //      mMessageService.start();
-          //    }
-              //else {
-            	//  mMessageService.resume();
-              //}
-          //}
+            //    mMessageService.start();
+             // }
+          //else {
+            //	  mMessageService.resume();
+           // }
+        //  }
           
           //WiFi P2P:
           registerReceiver(mReceiver, mIntentFilter);
@@ -222,70 +238,24 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
   	
   	private void setupApp() {
           Log.d(TAG, "setupApp()");  
-
-          mBtButton = (Button) findViewById(R.id.bt_button);
-          mBtButton.setOnClickListener(new OnClickListener() {
-              public void onClick(View v) {
-                btConnect();
-                mMessageService.start();
-              }
-          });
+       
           
-          mWifiButton = (Button) findViewById(R.id.wifi_button);
-          mWifiButton.setOnClickListener(new OnClickListener() {
-              public void onClick(View v) {
-                  //start server socket on port 8888 listening for any incoming requests
-            	 // serverActivity = new ServerActivity(thisActivity); //Ron: deprecated
-            	  
-            	  
-            	  wifiConnect();
-                  mMessageService.start(); //Ron: necessary?
-                }
-            });
-          
-          findViewById(R.id.send_button).setOnClickListener(new OnClickListener() {
-              public void onClick(View v) {
-                  mMessageService.write("Hello");
-              }
-          });
-          
-          findViewById(R.id.contacts_button).setOnClickListener(new OnClickListener() {
-              public void onClick(View v) {
-                  //getContacts(); //Ron: use async method instead:
-            	  getContactsAsync();
-              }
-          });
-          
-          findViewById(R.id.profile_button).setOnClickListener(new OnClickListener() {
+          findViewById(R.id.connect_button).setOnClickListener(new OnClickListener() {
         	  public void onClick(View v) {
-        		  getProfileAsync();
+        		  btConnect();
+        		  mMessageService.start();
         	  }
           });
           
-          //load previously saved own profile from file (used in offline mode) -> not needed as button
-        //  findViewById(R.id.loadProfile_button).setOnClickListener(new OnClickListener() {
-        //	  public void onClick(View v) {
-        //		  loadProfileFromFile();
-        //	  }
-         // });
-          
-        //load previously saved contact list from file (used in offline mode) -> not needed as button
-          //findViewById(R.id.loadContacts_button).setOnClickListener(new OnClickListener() {
-        //	  public void onClick(View v) {
-        //		  loadContactsFromFile();
-        //	  }
-        //  });
           
           //once connected to a peer via Bluetooth or WiFi, check if there are any common friends
           findViewById(R.id.check_common_friends_button).setOnClickListener(new OnClickListener() {
         	  public void onClick(View v) {
+        		  
+        		  
         		  checkCommonFriends();
         	  }
           });
-          
-          
-          
-          
           
           
       }
@@ -324,6 +294,53 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           
       }
       
+      /* 
+       * Ron, show the menu bar
+       * (non-Javadoc)
+       * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
+       */
+      public boolean onCreateOptionsMenu(Menu menu) {
+    	  MenuInflater inflater = getMenuInflater();
+    	  inflater.inflate(R.menu.menubar, menu);
+    	  return true;
+      }
+      
+      /*Ron, handle the user's selected menu items
+       * (non-Javadoc)
+       * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
+       */
+      
+      public boolean onOptionsItemSelected(MenuItem item) {
+    	  switch (item.getItemId()) {
+    	  case R.id.account:
+    	  	  setContentView(R.layout.account);
+    	  	  loadProfileFromFile();
+    	  	  
+    	  	  TextView t = new TextView(this);
+    	  	  t = (TextView)findViewById(R.id.current_name);
+    	  	  t.setText(myProfile.getFirstName() + " " + myProfile.getLastName());
+    	  		  
+    		  return true;
+    	  case R.id.privacy:
+    		  return true;
+    	  case R.id.synchronization:
+    		  setContentView(R.layout.synchronization);
+    		  
+    		  sharedPreference = getPreferences(Context.MODE_PRIVATE);
+    		  Long lastSync = sharedPreference.getLong("lastSync", 0);
+    		  Timestamp ts = new Timestamp(lastSync);
+    		  
+    		  TextView t2 = new TextView(this);
+    		  t2 = (TextView)findViewById(R.id.lastSyncText);
+    		  t2.setText(ts.toLocaleString()); 
+    		  
+    		  return true;
+    	  case R.id.connection:
+    		  return true;
+    	  default: return super.onOptionsItemSelected(item);
+    	  }
+      }
+      
       private void btConnect() {
           if(D) Log.d(TAG, "bluetooth connect");
           
@@ -360,8 +377,6 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           //startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
 
     	  
-    	  
-    	   
     	  if(benchmarkBandwidth){
     		  //mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
           }else {
@@ -430,38 +445,37 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                   String readMessage = new String(readBuf, 0, msg.arg1);
 
                   
-                  //Ron: perform the PSI's protocol steps here
-                  //use very simple state machine (the numbers prefix the messages):
-                    //1: B received A's user name and needs to response with his own name
-                    //2: A received B's user name; A can now proceed with the next PSI protocol step
-                    //3: B received A's zis and auth
-                  if (readMessage.startsWith("1")) {
-                	  Toast.makeText(target.getApplicationContext(), "You are connected to " 
-                			  + readMessage.substring(1) + " now. This does not mean that you are already Linkedin contacts.", Toast.LENGTH_SHORT).show();
+                //Ron: perform the PSI's protocol steps here - this should be moved to class ATWPSI later on! 
+                  
+                    
+                  if (mTarget.get().state == 1) { //readMessage.startsWith("1")
+                	  //Toast.makeText(target.getApplicationContext(), "You are connected to " 
+                		//	  + readMessage + " now. This does not mean that you are already Linkedin contacts.", Toast.LENGTH_SHORT).show(); //.substring(1)
                 	  mTarget.get().loadProfileFromFile(); //need to get our own profile information first
                 	  //set the current peer:
                 	  
                 	  mTarget.get().currentPeer = new CurrentPeer(); //currentPeer could be moved to this class... 
                 	  //currentPeer.setId();
                 	  //mTarget.get().currentPeer.setName(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName());
-                	  mTarget.get().currentPeer.setName(readMessage.substring(1));
+                	  mTarget.get().currentPeer.setName(readMessage);
                 	  
+                	  //"2" + 
+                	  mTarget.get().mMessageService.write(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName()); //we should also provide the Linkedin ID here so that the connecting can be done later on
                 	  
-                	  mTarget.get().mMessageService.write("2" + mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName()); //we should also provide the Linkedin ID here so that the connecting can be done later on
+                	  //set my own state for the next phase to the next level
+                	  mTarget.get().state = 3;
                   }
                  
-                  else if (readMessage.startsWith("2")) {
-                	  Toast.makeText(target.getApplicationContext(), "You are connected to " 
-                			  + readMessage.substring(1) + " now. This does not mean that you are already Linkedin contacts.", Toast.LENGTH_SHORT).show();
+                  else if (mTarget.get().state == 2) { //readMessage.startsWith("2")
+                	  //Toast.makeText(target.getApplicationContext(), "You are connected to " 
+                	//		  + readMessage + " now. This does not mean that you are already Linkedin contacts.", Toast.LENGTH_SHORT).show(); //.substring(1)
                 	
-                	  
-                	  
                 	  
                 	  //set the current peer:
                 	  mTarget.get().currentPeer = new CurrentPeer(); //currentPeer could be moved to this class... 
                 	  //currentPeer.setId();
                 	  //mTarget.get().currentPeer.setName(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName());
-                	  mTarget.get().currentPeer.setName(readMessage.substring(1));
+                	  mTarget.get().currentPeer.setName(readMessage);
                 	  
                 	  
                 	//do the PSI with the current peer now:
@@ -481,86 +495,250 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
               	    
               	    
               	    //send zis + auth to peer:
-              	    
-              	    //TODO: how to transfer an array list in a proper way???? 
-              	    //thus, for now: simulate the further protocol: 
-              	    	BigInteger Rb = mTarget.get().randomRange(mTarget.get().N); //this should be rather B's R later on... 
-              	    	BigInteger verification = mTarget.get().authObj.getAuth().modPow(mTarget.get().e, mTarget.get().N);
-              	    	BigInteger toVerify = BigInteger.ONE;
-              	    	for (BigInteger toVerifyi : mTarget.get().zis) {
-              	    		toVerify = toVerify.multiply(toVerifyi).mod(mTarget.get().N);
-              	    	}
-              	    	
-              	    	toVerify = mTarget.get().hash(toVerify.toByteArray(), (byte)0).mod(mTarget.get().N);
-              	    	if (verification.equals(toVerify)) {
-              	    		Log.d(TAG, "B: Contact set verification succeeded");
-              	    		//Toast.makeText(this, "B: Contact set verification succeeded", Toast.LENGTH_SHORT).show(); //just for testing purposes output for B shown on the screen here
-              	    	} else {
-              	    		Log.d(TAG, "B: Contact set verification failed");
-              	    		Log.d(TAG, "received verification tag: " + verification.toString());
-              	    		Log.d(TAG, "computed verification tag: " + toVerify.toString());
-              	    		//Toast.makeText(this, "B: Contact set verification failed", Toast.LENGTH_SHORT).show(); //just for testing purposes output for B shown on the screen here
-              	    	}
-          	    
-              	    	
-              	    	
-              	    	//TODO: A receives response (yis + auth) from B, here for now: simulated
-              	    	List<BigInteger> yis = new ArrayList<BigInteger>();
-              	    	yis.add(mTarget.get().hash("8s6KkD9wME".getBytes(), (byte)0).modPow(Rb, mTarget.get().N)); //Nakul
-              	    	yis.add(mTarget.get().hash("4UdTrB8V-Y".getBytes(), (byte)0).modPow(Rb, mTarget.get().N)); //Holger
-              	    	yis.add(mTarget.get().hash("XXXXXXXXXX".getBytes(), (byte)0).modPow(Rb, mTarget.get().N)); //no one
-          	    
-              	    	//TODO: check B's authorization on the part of A
-          	    
-              	    	//A computes
-              	    	List<BigInteger> t1 = new ArrayList<BigInteger>();
-              	    	for (BigInteger t1i : yis) {
-              	    		t1.add(t1i.modPow(mTarget.get().Ra, mTarget.get().N));
-              	    	}
-          	    
-              	    	//simulate B's computation and received by A:
-              	    	List<BigInteger> t2 = new ArrayList<BigInteger>();
-              	    	for (BigInteger t2i : mTarget.get().zis) {
-              	    		t2.add(t2i.modPow(Rb, mTarget.get().N));
-              	    	}
-          	    
-              	    	//A outputs:
-              	    	int i0 = 0;
-              	    	List<String> inCommon2 = new ArrayList<String>();
-              	    	for (int l = 0; l < t1.size(); l++) {
-              	    		for (int l2 = 0; l2 < t2.size(); l2++) {
-              	    			if (t1.get(l).equals(t2.get(l2))) {
-              	    				inCommon2.add(mTarget.get().contactList.get(l2).getFirstName() + " " + mTarget.get().contactList.get(l2).getLastName()); 			
-              	    			}
-              	    		}
-              	    	}
-              	    	Log.d(TAG, "Found " + inCommon2.size() + " common friends");
-          	  
-          	  
-              	    	String[] inCommon = new String[inCommon2.size()]; // = {"34D-XCZePk"};
-              	    	for (int l = 0; l < inCommon2.size(); l++) {
-              	    		inCommon[l] = inCommon2.get(l);
-              	    	}
-              	    	mTarget.get().currentPeer.setCommonFriends(inCommon);
-          	      	  
-              	    	//now show the result of the PSI to the user in a dialog:
-              	    	CommonFriendsDialogFragment newFragment = new CommonFriendsDialogFragment(); //DialogFragment
-              	    	newFragment.setCurrentPeer(mTarget.get().currentPeer);
-              	    	newFragment.show(mTarget.get().getFragmentManager(), "check-common-friends");
-          	  
-              	    	//the user's response to the "become friends" question is handled in the methods below
-                
-              	    	
+              	      //send number of zis first, so that peer knows how many BigInt-Reads it has to conduct:
+              	    Integer s = mTarget.get().zis.size();
+              	    mTarget.get().mMessageService.write(s.toString());
+              	      
+              	      
+              	    mTarget.get().state = 4;
                   
                   }
-                  
+                                  
           
-                  else {
+                  else if (mTarget.get().state == 3) {
+                	 //B receives A's number of zis
+                	  mTarget.get().peerSetSize = Integer.parseInt(readMessage);
+                	  mTarget.get().peerSet = new ArrayList<BigInteger>();
+                	  
+                	  
+                	  //B initializes itself
+                	  mTarget.get().loadContactsFromFile();
+                	    
+                	  //load authorization data from file as well:
+                	  mTarget.get().loadAuthorizationFromFile();
+                	    
+                	  mTarget.get().Rb = mTarget.get().authObj.getR(); //Rc as chosen by the CA when certifying the set of contacts
+
+
+                	  mTarget.get().N = mTarget.get().authObj.getN();
+                	  mTarget.get().e = mTarget.get().authObj.gete();
+                	  mTarget.get().yis = new ArrayList<BigInteger>();
+                	  for (ProfileObject pro : mTarget.get().contactList) { //for all elements in my own contact list
+                	    mTarget.get().yis.add(mTarget.get().hash(pro.getId().getBytes(), (byte)0).modPow(mTarget.get().Rb, mTarget.get().N));
+                	  }
+                	    
+                	  //B sends number of yis to A:
+                	  Integer s = mTarget.get().yis.size();
+                	  mTarget.get().mMessageService.write(s.toString());
+                	    
+                	    
+                	  mTarget.get().state = 5;
+                
+                  }
+                  
+                  else if (mTarget.get().state == 4) {
+                	  //A receives B's number of yis
+                	  mTarget.get().peerSetSize = Integer.parseInt(readMessage);
+                	  mTarget.get().peerSet = new ArrayList<BigInteger>();
+                	  
+                	  //A sends zis to B
+                	  for (int i = 0; i < mTarget.get().zis.size(); i++) {
+              	    	  mTarget.get().mMessageService.write(mTarget.get().zis.get(i));
+              	      }
+                	  
+                	  mTarget.get().state = 6;
+                	  
+                  }
+                  
+                  else if (mTarget.get().state == 5) {
+                	  //B receives A's zis
+                	  mTarget.get().peerSet.add(new BigInteger(readBuf));
+            	  		  
+            	  	  if (mTarget.get().peerSet.size() == mTarget.get().peerSetSize) { //i.e. received all elements
+            	  		//B sends its yis to A:
+                    	  for (int i = 0; i < mTarget.get().yis.size(); i++) {
+                    		  mTarget.get().mMessageService.write(mTarget.get().yis.get(i));
+                    	  }
+            	  		  
+            	  		  mTarget.get().state = 7;
+            	  	  }
+            	  	           	  	  
+                  }
+                  
+                  else if (mTarget.get().state == 6) {
+                	  //A receives B's yis
+                	  mTarget.get().peerSet.add(new BigInteger(readBuf));
+                	  
+                	  if (mTarget.get().peerSet.size() == mTarget.get().peerSetSize) {
+                		//A sends auth to B:
+                    	  mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
+                		  
+                		  mTarget.get().state = 8;
+                	  }
+                	  
+                  }
+                  
+                  else if (mTarget.get().state == 7) {
+                	  //B receives A's auth:
+                	  mTarget.get().peerAuth = new BigInteger(readBuf);
+                	  
+                	  //B checks A's auth:
+                	  BigInteger verification = mTarget.get().peerAuth.modPow(mTarget.get().e, mTarget.get().N);
+                	  BigInteger toVerify = BigInteger.ONE;
+                	  for (BigInteger toverifyi : mTarget.get().peerSet) {
+                		  toVerify = toVerify.multiply(toverifyi).mod(mTarget.get().N);
+                	  }
+                	  
+                	  toVerify = mTarget.get().hash(toVerify.toByteArray(), (byte)0).mod(mTarget.get().N);
+                	  if (verification.equals(toVerify)) {
+                		  Log.d(TAG, "B: Contact set verification succeeded");
+                	  }
+                	  else {
+                		  Log.d(TAG, "B: Contact set verification failed");
+            	    	  Log.d(TAG, "received verification tag: " + verification.toString());
+            	    	  Log.d(TAG, "computed verification tag: " + toVerify.toString());
+                	  }
+                	  
+                	  //B sends its aut to A:
+                	  mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
+                	  
+                	  //prepare for receiving computed tags later on:
+                	  mTarget.get().T = new ArrayList<BigInteger>();
+                	  mTarget.get().T2 = new ArrayList<BigInteger>();
+                	  
+                	  mTarget.get().state = 9;
+                  }
+                  
+                  else if (mTarget.get().state == 8) {
+                	  //A received B's auth:
+                	  mTarget.get().peerAuth = new BigInteger(readBuf);
+                	  
+                	  //A checks B's auth:
+                	  BigInteger verification = mTarget.get().peerAuth.modPow(mTarget.get().e, mTarget.get().N);
+                	  BigInteger toVerify = BigInteger.ONE;
+                	  for (BigInteger toverifyi : mTarget.get().peerSet) {
+                		  toVerify = toVerify.multiply(toverifyi).mod(mTarget.get().N);
+                	  }
+                	  
+                	  toVerify = mTarget.get().hash(toVerify.toByteArray(), (byte)0).mod(mTarget.get().N);
+                	  if (verification.equals(toVerify)) {
+                		  Log.d(TAG, "A: Contact set verification succeeded");
+                	  }
+                	  else {
+                		  Log.d(TAG, "A: Contact set verification failed");
+            	    	  Log.d(TAG, "received verification tag: " + verification.toString());
+            	    	  Log.d(TAG, "computed verification tag: " + toVerify.toString());
+                	  }
+                	  
+                	  
+                	  //A performs computations on yis and sends them to B:
+                	  mTarget.get().T = new ArrayList<BigInteger>();
+                	  for (BigInteger t1i : mTarget.get().peerSet) {
+                		  t1i = t1i.modPow(mTarget.get().Ra, mTarget.get().N);
+                		  mTarget.get().T.add(t1i);
+                		  mTarget.get().mMessageService.write(t1i);
+                	  }
+                	  
+                	  //prepare for receiving B's computed tags
+                	  mTarget.get().T2 = new ArrayList<BigInteger>();
+                	  
+                	  mTarget.get().state = 10;
+                  }
+                  
+                  else if (mTarget.get().state == 9) {
+                	  //B receives A's computed tags:
+                	  mTarget.get().T.add(new BigInteger(readBuf));
+                	  
+                	  
+                	  
+                	  if (mTarget.get().yis.size() == mTarget.get().T.size()) {
+                		  //B performs computations on zis and sends them to A:
+                		  for (BigInteger t2i : mTarget.get().peerSet) {
+                			  t2i = t2i.modPow(mTarget.get().Rb, mTarget.get().N);
+                			  mTarget.get().T2.add(t2i);
+                			  mTarget.get().mMessageService.write(t2i);
+                		  }
+                		  
+                		  
+                		  //output common contacts:
+                		  int i0 = 0;
+                		  List<String> inCommon2 = new ArrayList<String>();
+                		  for (int l = 0; l < mTarget.get().T.size(); l++) {
+                			  for (int l2 = 0; l2 < mTarget.get().T2.size(); l2++) {
+                				  if (mTarget.get().T.get(l).equals(mTarget.get().T2.get(l2))) {
+                				  inCommon2.add(mTarget.get().contactList.get(l2).getFirstName() + " " + mTarget.get().contactList.get(l2).getLastName());
+                				  }
+                				  }
+                		  }
+                		  Log.d(TAG, "Found " + inCommon2.size() + " common friends");
+                		  
+                		  String[] inCommon = new String[inCommon2.size()];
+                		  for (int l = 0; l < inCommon2.size(); l++) {
+                			  inCommon[l] = inCommon2.get(l);
+                		  }
+                		  mTarget.get().currentPeer.setCommonFriends(inCommon);
+                		  
+                		  //now show the result of the PSI to the user in a dialog:
+                	      CommonFriendsDialogFragment newFragment = new CommonFriendsDialogFragment(); //DialogFragment
+                	      newFragment.setCurrentPeer(mTarget.get().currentPeer);
+                	      newFragment.show(mTarget.get().getFragmentManager(), "check-common-friends");
+            	  
+                	      //the user's response to the "become friends" question is handled in the methods below
+             		  
+             		  
+                		  mTarget.get().state = 1;
+                	  }
+                	  
+                  }
+                  
+                  else if (mTarget.get().state == 10) {
+                	  //A receives B's computed tags:
+                	  mTarget.get().T2.add(new BigInteger(readBuf));
+                	  
+                	  
+                	  
+                	  if (mTarget.get().zis.size() == mTarget.get().T2.size()) {
+                		  //output common contacts:
+                		  int i0 = 0;
+                		  List<String> inCommon2 = new ArrayList<String>();
+                		  for (int l = 0; l < mTarget.get().T2.size(); l++) {
+                			  for (int l2 = 0; l2 < mTarget.get().T.size(); l2++) {
+                				  if (mTarget.get().T.get(l).equals(mTarget.get().T2.get(l2))) {
+                				  inCommon2.add(mTarget.get().contactList.get(l2).getFirstName() + " " + mTarget.get().contactList.get(l2).getLastName());
+                			  
+                				  }
+                			  }
+                		  }
+                		  Log.d(TAG, "Found " + inCommon2.size() + " common friends");
+                		  
+                		  String[] inCommon = new String[inCommon2.size()];
+                		  for (int l = 0; l < inCommon2.size(); l++) {
+                			  inCommon[l] = inCommon2.get(l);
+                		  }
+                		  mTarget.get().currentPeer.setCommonFriends(inCommon);
+                		  
+                		  //now show the result of the PSI to the user in a dialog:
+                	      CommonFriendsDialogFragment newFragment = new CommonFriendsDialogFragment(); //DialogFragment
+                	      newFragment.setCurrentPeer(mTarget.get().currentPeer);
+                	      newFragment.show(mTarget.get().getFragmentManager(), "check-common-friends");
+            	  
+                	      //the user's response to the "become friends" question is handled in the methods below
+                		  
+                		  mTarget.get().state = 1; 
+                	  }
+                	  
+                  }
+  	  
+            	  else {
+                	   
                 	  //user pressed send button (for test purposes only)
-                	  Toast.makeText(target.getApplicationContext(), "Message read " 
-            			  + readMessage, Toast.LENGTH_SHORT).show();
+                	 // Toast.makeText(target.getApplicationContext(), "Message read " 
+            		//	  + readMessage, Toast.LENGTH_SHORT).show();
                   }
                   break;
+                  
+    
+                  
               case CommunicationService.MESSAGE_DEVICE_NAME:
                   // save the connected device's name
                   target.mConnectedDeviceName = msg.getData().getString(CommunicationService.DEVICE_NAME);
@@ -582,35 +760,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           }
       }};
       
-      //Ron: this method doesn't work if the contacts list is too long -> rather use async. call instead
-      /*public List<Contact> getContacts(){
-    	  
-    	  List<Contact> contactsList = adapter.getContactList();          
-          
-    	  if (contactsList != null && contactsList.size() > 0) 
-    	  {
-    	     for (Contact p : contactsList)
-    	     {
-    	          if (TextUtils.isEmpty(p.getFirstName()) && TextUtils.isEmpty(p.getLastName())) 
-    	          {                                                   
-    	              p.setFirstName(p.getDisplayName());
-    	          }
-    	                                                  
-    	          Log.d(TAG , "Display Name = " +  p.getDisplayName());
-    	          Log.d(TAG , "First Name   = " +  p.getFirstName());
-    	          Log.d(TAG , "Last Name    = " +  p.getLastName());
-    	          Log.d(TAG , "Contact ID   = " +  p.getId());
-    	          Log.d(TAG , "Profile URL  = " +  p.getProfileUrl());  
-    	                                                  
-    	     }    
-    	  }
-    	  
-    	  return contactsList;
-    	      	  
-    	  
-      } */
       
-      //instead, Ron: 
       public void getContactsAsync() {
     	  try {
     		  adapter.getContactListAsync(new SocialContactListener(this)); 
@@ -619,7 +769,9 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     	  }
       }
       
-      //Ron:
+/* Ron
+ * 
+ */
       public void loadProfileFromFile() {  
     	//load it into object that can be used later on
     	  
@@ -637,7 +789,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
   				objectInput.close();
   				Log.d("Friend Finder Activity", "Profile loaded");
   				Log.d("Friend Finder Activity", "Name: " + myProfile.getFirstName() + " " + myProfile.getLastName());
-  				Toast.makeText(this, "Your offline profile is: " + myProfile.getFirstName() + " " + myProfile.getLastName(), Toast.LENGTH_SHORT).show();
+  				//Toast.makeText(this, "Your offline profile is: " + myProfile.getFirstName() + " " + myProfile.getLastName(), Toast.LENGTH_SHORT).show();
   			} catch (Exception e) {
   				Log.d("Friend Finder Activity", "File has not been downloaded so far");
   				Toast.makeText(this, "You need to download your profile first", Toast.LENGTH_SHORT).show();
@@ -645,9 +797,9 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
   			
       }
       
-      /* Ron
-       * 
-       */
+/* Ron
+ * 
+ */
       public void loadContactsFromFile() {
     	  //load it into object that can be used later on
     	  
@@ -666,7 +818,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
   			objectInput.close();
   			Log.d("Friend Finder Activity", "Contacts loaded");
   				
-  			Toast.makeText(this, "Your " + contactList.size() + " offline contacts have been loaded", Toast.LENGTH_SHORT).show();
+  			//Toast.makeText(this, "Your " + contactList.size() + " offline contacts have been loaded", Toast.LENGTH_SHORT).show();
   		} catch (Exception e) {
   			Log.d("Friend Finder Activity", "File has not been downloaded so far");
   			Toast.makeText(this, "You need to download your contacts first", Toast.LENGTH_SHORT).show();
@@ -695,121 +847,22 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
 		}
       }
       
-      /* Ron
-       * 
-       */
+/* Ron
+ * 
+ */
       public void checkCommonFriends() {
-    	  
     	  
     	  //assume established communication channel with peer 
     	  loadProfileFromFile(); //need to get our own profile information first
     	  
     	  //tell the peer who he is dealing with
-    	  mMessageService.write("1" + myProfile.getFirstName() + " " + myProfile.getLastName()); //we should also provide the id here so that the connecting can be done later on
+    	  
+    	  //"1" + 
+    	  mMessageService.write(myProfile.getFirstName() + " " + myProfile.getLastName()); //we should also provide the id here so that the connecting can be done later on
+    	  state = 2;
     	  
     	  //from now on, the protocol is performed in the message handler class above
     	  
-    	  
-    	  /*
-    	   * just for test purposes: handling of the current peer
-    	   * the current peer data should be set after the P2P connect to this peer
-    	   */
-    	  //currentPeer = new CurrentPeer();
-    	  //currentPeer.setId("PqPUMaIzIk");
-    	  //currentPeer.setName("Christoph Sorge");
-    	  
-    	  
-    	  //do the PSI with the current peer now:
-    	 
-    	  /*
-    	  
-    	  //get my own contactList (as we are offline now, we need to load the saved contact list from the file)
-    	    loadContactsFromFile();
-    	    
-    	    //load authorization data from file as well:
-    	    loadAuthorizationFromFile();
-    	    
-    	    BigInteger Rc = authObj.getRc(); //Rc as chosen by the CA when certifying the set of contacts
-    	    BigInteger N = authObj.getN();
-    	    BigInteger e = authObj.gete();
-    	    List<BigInteger> zis = new ArrayList<BigInteger>();
-    	    for (ProfileObject pro : contactList) { //for all elements in my own contact list
-    	    	zis.add(hash(pro.getId().getBytes(), (byte)0).modPow(Rc, N));
-    	    }
-    	    //Log.d(TAG, "Test**A: " + zis.get(0).toString());
-    	    
-    	    //TODO: send zis + auth to peer and receive response; for now: simulate the communication with the peer
-    	    
-    	    */
-    	    
-    	  /*
-    	    
-    	    //simulation of B:
-    	    BigInteger Rs = randomRange(N);
-    	    BigInteger verification = authObj.getAuth().modPow(e, N);
-    	    BigInteger toVerify = BigInteger.ONE;
-    		for (BigInteger toVerifyi : zis) {
-    			toVerify = toVerify.multiply(toVerifyi).mod(N);
-    		}
-    		toVerify = hash(toVerify.toByteArray(), (byte)0).mod(N);
-    	    if (verification.equals(toVerify)) {
-    	    	Log.d(TAG, "B: Contact set verification succeeded");
-    	    	//Toast.makeText(this, "B: Contact set verification succeeded", Toast.LENGTH_SHORT).show(); //just for testing purposes output for B shown on the screen here
-    	    } else {
-    	    	Log.d(TAG, "B: Contact set verification failed");
-    	    	Log.d(TAG, "received verification tag: " + verification.toString());
-    	    	Log.d(TAG, "computed verification tag: " + toVerify.toString());
-    	    	//Toast.makeText(this, "B: Contact set verification failed", Toast.LENGTH_SHORT).show(); //just for testing purposes output for B shown on the screen here
-    	    }
-    	    
-    	    //TODO: A receives response (yis + auth) from B, here for now: simulated
-    	    List<BigInteger> yis = new ArrayList<BigInteger>();
-    	    yis.add(hash("8s6KkD9wME".getBytes(), (byte)0).modPow(Rs, N)); //Nakul
-    	    yis.add(hash("4UdTrB8V-Y".getBytes(), (byte)0).modPow(Rs, N)); //Holger
-    	    yis.add(hash("XXXXXXXXXX".getBytes(), (byte)0).modPow(Rs, N)); //no one
-    	    
-    	    //TODO: check B's authorization on the part of A
-    	    
-    	    //A computes
-    	    List<BigInteger> t1 = new ArrayList<BigInteger>();
-    	    for (BigInteger t1i : yis) {
-    	    	t1.add(t1i.modPow(Rc, N));
-    	    }
-    	    
-    	    //simulate B's computation and received by A:
-    	    List<BigInteger> t2 = new ArrayList<BigInteger>();
-    	    for (BigInteger t2i : zis) {
-    	    	t2.add(t2i.modPow(Rs, N));
-    	    }
-    	    
-    	    //A outputs:
-    	    int i0 = 0;
-    	    List<String> inCommon2 = new ArrayList<String>();
-    	    for (int l = 0; l < t1.size(); l++) {
-    	    	for (int l2 = 0; l2 < t2.size(); l2++) {
-    	    		if (t1.get(l).equals(t2.get(l2))) {
-    	    			inCommon2.add(contactList.get(l2).getFirstName() + " " + contactList.get(l2).getLastName()); 			
-    	    		}
-    	    	}
-    	    }
-    	    Log.d(TAG, "Found " + inCommon2.size() + " common friends");
-    	  
-    	  
-    	  String[] inCommon = new String[inCommon2.size()]; // = {"34D-XCZePk"};
-    	  for (int l = 0; l < inCommon2.size(); l++) {
-    		  inCommon[l] = inCommon2.get(l);
-    	  }
-    	  currentPeer.setCommonFriends(inCommon);
-    	      	  
-    	  //now show the result of the PSI to the user in a dialog:
-    	  CommonFriendsDialogFragment newFragment = new CommonFriendsDialogFragment(); //DialogFragment
-    	  newFragment.setCurrentPeer(currentPeer);
-    	  newFragment.show(getFragmentManager(), "check-common-friends");
-    	  
-    	  //the user's response to the "become friends" question is handled in the methods below
-    	   
-
-    	   */
       }
       
       //Ron: these are the implemented interface methods from CommonFriendsDialogFragment. Here we receive a callback when a button is pressed
@@ -929,4 +982,33 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     		return temp;
     		
     	}
+      
+      public void syncnow(View view) {
+    	  getContactsAsync();
+    	  getProfileAsync();
+    	  
+    	  sharedPreference = getPreferences(Context.MODE_PRIVATE);
+    	  SharedPreferences.Editor editor = sharedPreference.edit();
+    	  Timestamp ts = new Timestamp(System.currentTimeMillis());
+    	  Long time = ts.getTime();
+    	  editor.putLong("lastSync", time);
+    	  editor.commit();
+    	  
+    	  TextView t2 = new TextView(this);
+		  t2 = (TextView)findViewById(R.id.lastSyncText);
+		  t2.setText(ts.toLocaleString()); 
+      }
+      
+      public void backtomain(View view) {
+    	  setContentView(R.layout.main);
+      }
+      
+      public void login(View view) {
+    	
+      }
+      
+      public void logout(View view) {
+    	  
+    	  
+      }
 }

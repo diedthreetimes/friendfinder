@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <Button
+        android:id="@+id/logout"
+        android:layout_width="296dp"
+        android:layout_height="wrap_content"
+        android:layout_x="9dp"
+        android:layout_y="72dp"
+        android:drawableLeft="@drawable/linkedin"
+        android:onClick="logout"
+        android:text="Logout from LinkedIn" />
+
+    <Button
+        android:id="@+id/login"
+        android:layout_width="287dp"
+        android:layout_height="wrap_content"
+        android:layout_x="13dp"
+        android:layout_y="17dp"
+        android:drawableLeft="@drawable/linkedin"
+        android:onClick="login"
+        android:text="Login to LinkedIn" />
+    
+     <Button
+        android:id="@+id/button_back"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_x="121dp"
+        android:layout_y="380dp"
+        android:text="BACK" 
+        android:onClick="backtomain"/>
+
+     <TextView
+         android:id="@+id/textView1"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_x="17dp"
+         android:layout_y="144dp"
+         android:text="Your current LinkedIn name is: " />
+
+     <TextView
+         android:id="@+id/current_name"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_x="48dp"
+         android:layout_y="174dp"
+         android:text=" "
+         android:textAppearance="?android:attr/textAppearanceLarge" />
+
+     
+
+</AbsoluteLayout>
