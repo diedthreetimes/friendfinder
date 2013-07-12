@@ -49,5 +49,5 @@ CaServer::Application.routes.draw do
   # Make all controller actions accessible
   match ':controller(/:action(/:id))(.:format)'
 
-  root :to => 'authority#download_profile', :format => 'json'
+  root :to => 'authority#download_connections', :format => 'json'
 end

@@ -1,7 +1,6 @@
-require 'ca'
+require 'hbc_psi'
 class AuthorityController < ApplicationController
   respond_to :json, :html
-  # Download a signed version of the linked in profile
   def login
     #TODO: Store the redirected url in the session and then use it again here
     request_token = client.request_token(:oauth_callback => "http://#{request.host_with_port}/authority/download_connections.#{request.format.to_sym}")
@@ -26,7 +25,6 @@ class AuthorityController < ApplicationController
 
   def download_profile
     with_log_in do |c|
-      # @profile = client.profile
       respond_with( c.profile )
     end
   end
@@ -34,21 +32,32 @@ class AuthorityController < ApplicationController
   def download_connections
     with_log_in do |c|
       # @profile = client.profile
-      respond_with( c.connections )
+
+      friends = c.connections[:all]
+
+      resp = {}
+      resp[:connections] = friends
+
+      resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v[:id]})
+
+      respond_with( resp )
     end
   end
+
+  # TODO: Give a way to download certificate securely. We would need a non self signed certificate to really be secure.
+  # TODO: ensure HTTPS only
+
   private
   def client
     @client ||= LinkedIn::Client.new("78imlmkvuvhi", "BbIEylD3TBcAvVeR")
   end
 
-  # this could easily take a block
   def with_log_in &block
     if session[:atoken].nil?
       if params[:oauth_verifier].nil?
         redirect_to action: 'login', format: request.format.to_sym
         return
-      end
+       end
 
       pin = params[:oauth_verifier]
       atoken, asecret = client.authorize_from_request(session[:rtoken], session[:rsecret], pin)
