@@ -6,7 +6,10 @@
 
 package com.sprout.friendfinder;
 
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -15,12 +18,19 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.android.SocialAuthListener;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -58,8 +68,9 @@ private Activity mActivity;
 		Toast.makeText(mActivity, "Your " + contactList.size() + " contacts have been downloaded", Toast.LENGTH_SHORT).show();
 		
 		
-		
+		 
 		//later on: get the certification of the contact list from the CA; for now: certify here for test purposes
+		//Ron., 15. Jul.: which key was used on the server-side? public key needs to be included here
 				BigInteger N,e;
 				BigInteger p,q,d;
 				p = new BigInteger("00dba2d30dfc225ffcd894015d8971" +
@@ -76,12 +87,62 @@ private Activity mActivity;
 				e = BigInteger.valueOf(3);
 				d = e.modInverse(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE)));
 				
-				BigInteger Rc  = randomRange(N);
+				//get the secrets from server instead, Ron. 15. Jul: (done further down in the code now)
+				//BigInteger Rc  = randomRange(N);
 		List<BigInteger> ais = new ArrayList<BigInteger>(); // The set {a1,a2,...,am}
 		
-		 // t = (p-1)/q to hash into the group Z*p
-	    //BigInteger t;
-	    //t = (p.subtract(BigInteger.ONE).divide(q));
+		 
+		
+		
+		
+		//Ron, 15. Jul: fetch authorization from server (instead of above code):
+		InputStream serverInput = null;
+		String serverResult = null;
+		JSONObject serverArray = null;
+		JSONObject psiMessage = null;
+		
+		//retrieve data:
+		try {
+			HttpClient httpClient = new DefaultHttpClient();
+			HttpPost httpPost = new HttpPost("http://128.195.4.215:3000/authority/download_connections.json");
+			HttpResponse response = httpClient.execute(httpPost);
+			HttpEntity entity = response.getEntity();
+			serverInput = entity.getContent();
+			
+		} catch (Exception e2) {
+			Log.d("SocialContactListner", "Connection error to LinkedIn CA: " + e2.toString());
+		}
+		
+		//convert response:
+		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput));
+			StringBuilder stringBuilder = new StringBuilder();
+			String line = null;
+			while ((line = reader.readLine()) != null) {
+				stringBuilder.append(line + "\n");
+			}
+			serverInput.close();
+			serverResult = stringBuilder.toString();
+		} catch (Exception e3) {
+			Log.d("SocialContactListener", "Converting error: " + e3.toString());
+		}
+		
+		//parse:
+		try {
+			serverArray = new JSONObject(serverResult);
+		} catch (Exception e4) {
+			Log.d("SocialContactListener", "Parsing error: " + e4.toString());
+		}
+		
+		//get element:
+		try {
+			psiMessage = serverArray.getJSONObject("psi_message");
+			
+		} catch (Exception e5) {
+			Log.d("SocialContactListener", "Parsing error:" + e5.toString());
+		}
+		
+		//Ron, 15. Jul, end of fetching authorization
 		
 		
 		//save contacts to file
@@ -90,21 +151,49 @@ private Activity mActivity;
 		for (Contact c: contactList) {
 			profile = new ProfileObject(c.getFirstName(), c.getLastName(), c.getId());
 			contacts.add(profile);
+						
+			//Ron, 15. Jul.: instead of computing ais here, get them from the server (actually, we don't need to fetch them here as we can compute them later on during the PSI protocol):
+			//ais.add(hash(c.getId().getBytes(), (byte)0).modPow(Rc, N));
 			
-			//ais.add(hash(c.getId().getBytes(), (byte)0).mod(p).modPow(t, p).modPow(Rc, p)); //right?
-			ais.add(hash(c.getId().getBytes(), (byte)0).modPow(Rc, N));
+			
 		}
-		//Log.d(TAG, "Test**CA: " + ais.get(0).toString());
 		
-		//just for now: compute hash of product of ais instead of their concatenation
+		
+		/*
+		 * Ron, 15. Jul.: get the authorization from the server instead
+		 * warning: the hashing on the server-side might have been done different from here (and thus, the verification in the PSI protocol might be needed to be modified?)
+		 
+		//compute hash of product of ais instead of their concatenation
 		BigInteger auth = BigInteger.ONE;
 		for (BigInteger ai : ais) {
-			auth = auth.multiply(ai).mod(N); //N instead of p
+			auth = auth.multiply(ai).mod(N); 
 		}
 		//hash&sign:
 		auth = hash(auth.toByteArray(), (byte)0).mod(N);
 		auth = auth.modPow(d, N);
 		Log.d(TAG, "Auth(a): " + auth.toString());
+		
+		*/
+		BigInteger auth = null; 
+		String authString;
+		try {
+			authString = psiMessage.getString("sig");
+			//convert the base64-encoded string into BigInteger:
+			auth = new BigInteger(Base64.decode(authString, Base64.DEFAULT));
+		} catch (Exception e6) {
+			Log.d(TAG, "Signature could not be retrieved: " + e6.toString());
+		}
+		
+		//Ron., 15.Jul: retrieve the secret exponent from server now as well and save it as Rc:
+		BigInteger Rc = null;
+		String secretsString; 
+		try {
+			secretsString = psiMessage.getString("secrets");
+			Rc = new BigInteger(Base64.decode(secretsString, Base64.DEFAULT));
+		} catch (Exception e7) {
+			Log.d(TAG, "Secret Rc could not be retrieved: " + e7.toString());
+		}
+		
 		
 		ContactsListObject clo = new ContactsListObject(contacts);
 		
@@ -142,6 +231,9 @@ private Activity mActivity;
 	}
 	
 	//this is not the right place for the functionality:
+	//Ron, 15. Jul.: not needed any longer as we get the authorization from the server:
+	
+	/*
 protected BigInteger hash(byte [] message, byte selector){
 		
 		// input = selector | message
@@ -177,4 +269,7 @@ protected BigInteger randomRange(BigInteger range){
 	
 }
 
+*/
+	
+	
 }

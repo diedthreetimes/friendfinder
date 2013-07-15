@@ -322,6 +322,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     	  		  
     		  return true;
     	  case R.id.privacy:
+    		  setContentView(R.layout.privacy);
     		  return true;
     	  case R.id.synchronization:
     		  setContentView(R.layout.synchronization);
@@ -336,6 +337,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     		  
     		  return true;
     	  case R.id.connection:
+    		  setContentView(R.layout.connection);
     		  return true;
     	  default: return super.onOptionsItemSelected(item);
     	  }
