@@ -47,6 +47,7 @@ import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.StrictMode;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.Time;
@@ -121,7 +122,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {        
-        super.onCreate(savedInstanceState);
+    	
+    	//Ron., Aug. 06: just for now: as the connection to the CA should be done in an async. task later on... 
+    	StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+    	StrictMode.setThreadPolicy(policy);
+    	
+    	
+    	super.onCreate(savedInstanceState);
         if(D) Log.d(TAG, "+++ ON CREATE +++");
 
         // Set up the window layout
@@ -129,6 +136,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
 
         
         // TODO: Find a way to see if p2pwifi is supported
+        //Ron., Aug. 06: commented out:
+        /*
         mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
         mReceiver = new WiFiDirectBroadcastReceiver(mManager, mChannel, this);
@@ -141,11 +150,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+        */
         
+        
+        //Ron., Aug. 06: commented out as Bluetooth is not supported in emulator:
+        /*
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        
         
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -153,6 +164,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
             finish();
             return;
         }
+        */
         
         // Add the social library
         adapter = new SocialAuthAdapter(new DialogListener() {
@@ -199,6 +211,10 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           
           // If BT is not on, request that it be enabled.
           // setupChat() will then be called during onActivityResult
+          
+          
+          //Ron, Aug. 06: commented out as it does not run in the emulator with Bluetooth on:
+          /*
           if (!mBluetoothAdapter.isEnabled()) {          
               // Enable the bluetooth adapter
               Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -207,6 +223,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           } else {
               if (mMessageService == null) setupApp();
           }
+          */
           
           
           
@@ -232,7 +249,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         //  }
           
           //WiFi P2P:
-          registerReceiver(mReceiver, mIntentFilter);
+          //Ron, Aug. 08: commented out:
+          //registerReceiver(mReceiver, mIntentFilter);
           
       }
   	
@@ -242,8 +260,10 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           
           findViewById(R.id.connect_button).setOnClickListener(new OnClickListener() {
         	  public void onClick(View v) {
-        		  btConnect();
-        		  mMessageService.start();
+        		  
+        		  //!!!!Ron: Aug. 06: stopped Bluetooth for now to be able to test app in emulator
+        		  //btConnect();
+        		  //mMessageService.start();
         	  }
           });
           
@@ -270,7 +290,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
             //mMessageService.pause();
           
           //WiFi P2P:
-          unregisterReceiver(mReceiver);
+          //Ron., Aug. 06: commented out:
+          //unregisterReceiver(mReceiver);
       }
 
       @Override
@@ -286,10 +307,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           if(D) Log.e(TAG, "--- ON DESTROY ---");
                  
           // Stop the message service
+          //Ron, Aug. 06: commented out:
+          /*
           if (mMessageService != null) {
           	mMessageService.stop();
           	mMessageService = null;
           }
+          */
           
           
       }

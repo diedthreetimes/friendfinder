@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.brickred.socialauth.Contact;
@@ -65,14 +66,18 @@ private Activity mActivity;
 			Log.d("Social Contact Listener", "ID: " + p.getId() + "\n");
 		}
 		
+		Log.d(TAG, "Your " + contactList.size() + " contacts have been downloaded");
 		Toast.makeText(mActivity, "Your " + contactList.size() + " contacts have been downloaded", Toast.LENGTH_SHORT).show();
 		
 		
 		 
 		//later on: get the certification of the contact list from the CA; for now: certify here for test purposes
 		//Ron., 15. Jul.: which key was used on the server-side? public key needs to be included here
-				BigInteger N,e;
-				BigInteger p,q,d;
+				
+		BigInteger N,e;
+			
+		/*
+		BigInteger p,q,d;
 				p = new BigInteger("00dba2d30dfc225ffcd894015d8971" +
 						"6c2693e7d35c051670eb850337a41f" + 
 				        "719855ebc0839747651487a4f178cd" +
@@ -85,7 +90,14 @@ private Activity mActivity;
 						"4c64d11e9b",16);
 				N = p.multiply(q);
 				e = BigInteger.valueOf(3);
-				d = e.modInverse(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE)));
+		*/
+				
+				//Ron, 6.8.: use the new CA's public key:
+				String nString = "0282010100CE08801F12CD287F1ED1A6C66CA46A62F8C01E343320F64DB7DA99DFEBAEF49D3BDDCC723597B687C5C11343289A1FCCAD0B60C9DDE3D6364981DAF334617185C48914EEDD8E5FE0909E33BDB8255E2613936F014A73FE453E739B5E4A83A578D49D1B79C8FAFAB474E14C004FE6C13F594CC55EC5FB8F017C82CE1E4EF13D1E63C717D6BD6D93D0D61914C992621C86FB8A66E793934154F392CEA183D8D93CFEF6955C9919F47441BE25DA1E0EDE2BC83BDB4A8896B772A220F9E9DAD5C462C53E1CDD7CCC18F6530DE369F22CD99F5EEA75660A2035170B797D907AF9756509574A8473E726575F5A344C51797CB7FA05B51BB1BAF1A47FB60F1F17C33D01";
+				N = new BigInteger(nString, 16); 
+				e = BigInteger.valueOf(65537);
+				
+				//d = e.modInverse(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE)));
 				
 				//get the secrets from server instead, Ron. 15. Jul: (done further down in the code now)
 				//BigInteger Rc  = randomRange(N);
@@ -103,11 +115,13 @@ private Activity mActivity;
 		
 		//retrieve data:
 		try {
+			Log.d(TAG, "Trying to connect to CA...");
 			HttpClient httpClient = new DefaultHttpClient();
-			HttpPost httpPost = new HttpPost("http://128.195.4.215:3000/authority/download_connections.json");
-			HttpResponse response = httpClient.execute(httpPost);
+			HttpGet httpGet = new HttpGet("http://128.195.4.215:3000/authority/download_connections.json");
+			HttpResponse response = httpClient.execute(httpGet);
 			HttpEntity entity = response.getEntity();
 			serverInput = entity.getContent();
+			Log.d(TAG, "Connected to CA");
 			
 		} catch (Exception e2) {
 			Log.d("SocialContactListner", "Connection error to LinkedIn CA: " + e2.toString());
