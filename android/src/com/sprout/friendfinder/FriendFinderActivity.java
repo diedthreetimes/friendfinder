@@ -14,12 +14,14 @@ import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Aug. 14
 import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.android.SocialAuthListener;
+*/
 
 import com.sprout.finderlib.DeviceList;
 import com.sprout.finderlib.PrivateProtocol;
@@ -57,6 +59,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -92,7 +95,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     private Button mBtButton;
     private Button mWifiButton;
     
-    private SocialAuthAdapter adapter;
+    //private SocialAuthAdapter adapter; //Aug., 14
     
     //these variables are needed for the PSI protocol -> they should rather be put to the message handler class as they are used there...
     CurrentPeer currentPeer;
@@ -124,8 +127,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     public void onCreate(Bundle savedInstanceState) {        
     	
     	//Ron., Aug. 06: just for now: as the connection to the CA should be done in an async. task later on... 
-    	StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-    	StrictMode.setThreadPolicy(policy);
+    	//StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+    	//StrictMode.setThreadPolicy(policy);
     	
     	
     	super.onCreate(savedInstanceState);
@@ -167,6 +170,10 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         */
         
         // Add the social library
+        
+        /*
+         * Aug. 14
+         * 
         adapter = new SocialAuthAdapter(new DialogListener() {
         	@Override
 			public void onComplete(Bundle values) {
@@ -198,6 +205,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         
         //TODO: This is probably not the place for this
         adapter.authorize(this, Provider.LINKEDIN);
+        
+        */
         
     }
     
@@ -486,7 +495,19 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  mTarget.get().currentPeer.setName(readMessage);
                 	  
                 	  //"2" + 
-                	  mTarget.get().mMessageService.write(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName()); //we should also provide the Linkedin ID here so that the connecting can be done later on
+                	  
+                	  /*
+                	   * 
+                	   * Ron, Aug. 14, removed as lib was removed - needed later on again!!!!!!!!!!
+                	   * 
+                	   * 
+                	   */
+                	 
+                	  //mTarget.get().mMessageService.write(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName()); //we should also provide the Linkedin ID here so that the connecting can be done later on
+                	  
+                	  
+                	  
+                	  
                 	  
                 	  //set my own state for the next phase to the next level
                 	  mTarget.get().state = 3;
@@ -523,7 +544,14 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
               	    //send zis + auth to peer:
               	      //send number of zis first, so that peer knows how many BigInt-Reads it has to conduct:
               	    Integer s = mTarget.get().zis.size();
-              	    mTarget.get().mMessageService.write(s.toString());
+              	    
+              	    
+              	    /*
+              	     * 
+              	     * 
+              	     * Ron, Aug. 14: removed for now as lib was removed
+              	     */
+              	    //mTarget.get().mMessageService.write(s.toString());
               	      
               	      
               	    mTarget.get().state = 4;
@@ -555,7 +583,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	    
                 	  //B sends number of yis to A:
                 	  Integer s = mTarget.get().yis.size();
-                	  mTarget.get().mMessageService.write(s.toString());
+                	  
+                	  /*
+                	     * 
+                	     * 
+                	     * Ron, Aug. 14: removed for now as lib was removed
+                	     */
+                	  //mTarget.get().mMessageService.write(s.toString());
                 	    
                 	    
                 	  mTarget.get().state = 5;
@@ -569,7 +603,15 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  
                 	  //A sends zis to B
                 	  for (int i = 0; i < mTarget.get().zis.size(); i++) {
-              	    	  mTarget.get().mMessageService.write(mTarget.get().zis.get(i));
+              	    	  
+                		  
+                		  
+                		  /*
+                    	     * 
+                    	     * 
+                    	     * Ron, Aug. 14: removed for now as lib was removed
+                    	     */
+                		  //mTarget.get().mMessageService.write(mTarget.get().zis.get(i));
               	      }
                 	  
                 	  mTarget.get().state = 6;
@@ -583,7 +625,12 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
             	  	  if (mTarget.get().peerSet.size() == mTarget.get().peerSetSize) { //i.e. received all elements
             	  		//B sends its yis to A:
                     	  for (int i = 0; i < mTarget.get().yis.size(); i++) {
-                    		  mTarget.get().mMessageService.write(mTarget.get().yis.get(i));
+                    		  /*
+                        	     * 
+                        	     * 
+                        	     * Ron, Aug. 14: removed for now as lib was removed
+                        	     */
+                    		  //mTarget.get().mMessageService.write(mTarget.get().yis.get(i));
                     	  }
             	  		  
             	  		  mTarget.get().state = 7;
@@ -597,7 +644,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  
                 	  if (mTarget.get().peerSet.size() == mTarget.get().peerSetSize) {
                 		//A sends auth to B:
-                    	  mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
+                    	  
+                		  /*
+                    	     * 
+                    	     * 
+                    	     * Ron, Aug. 14: removed for now as lib was removed
+                    	     */
+                		  //mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
                 		  
                 		  mTarget.get().state = 8;
                 	  }
@@ -626,7 +679,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  }
                 	  
                 	  //B sends its aut to A:
-                	  mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
+                	  
+                	  /*
+                	     * 
+                	     * 
+                	     * Ron, Aug. 14: removed for now as lib was removed
+                	     */
+                	  //mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
                 	  
                 	  //prepare for receiving computed tags later on:
                 	  mTarget.get().T = new ArrayList<BigInteger>();
@@ -662,7 +721,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  for (BigInteger t1i : mTarget.get().peerSet) {
                 		  t1i = t1i.modPow(mTarget.get().Ra, mTarget.get().N);
                 		  mTarget.get().T.add(t1i);
-                		  mTarget.get().mMessageService.write(t1i);
+                		  
+                		  /*
+                    	     * 
+                    	     * 
+                    	     * Ron, Aug. 14: removed for now as lib was removed
+                    	     */
+                		  //mTarget.get().mMessageService.write(t1i);
                 	  }
                 	  
                 	  //prepare for receiving B's computed tags
@@ -682,7 +747,14 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 		  for (BigInteger t2i : mTarget.get().peerSet) {
                 			  t2i = t2i.modPow(mTarget.get().Rb, mTarget.get().N);
                 			  mTarget.get().T2.add(t2i);
-                			  mTarget.get().mMessageService.write(t2i);
+                			  
+                			  
+                			  /*
+                        	     * 
+                        	     * 
+                        	     * Ron, Aug. 14: removed for now as lib was removed
+                        	     */
+                			  //mTarget.get().mMessageService.write(t2i);
                 		  }
                 		  
                 		  
@@ -788,11 +860,19 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       
       
       public void getContactsAsync() {
+    	 
+    	  /*
+    	   * Ron, Aug. 9: don't use socialauth-API any more, but contact our own CA instead
+    	   * 
     	  try {
     		  adapter.getContactListAsync(new SocialContactListener(this)); 
     	  } catch (Exception e) {
     		  Log.d(TAG, e.getMessage());
     	  }
+    	  */
+    	  
+    	  new ContactDownloader().execute(); //perform the contact downloading as an async. task
+    	  
       }
       
 /* Ron
@@ -902,7 +982,12 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       }
       
       public void getProfileAsync() {
-    	  adapter.getUserProfileAsync(new SocialProfileListener(this)); //the actual activity (which is the context) needs to be provided to the Listener
+    	  
+    	  /*
+    	   * Ron., Aug. 14
+    	   */
+    	  
+    	  //adapter.getUserProfileAsync(new SocialProfileListener(this)); //the actual activity (which is the context) needs to be provided to the Listener
       }
       
       //Called when INTENT is returned
@@ -1030,7 +1115,9 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       }
       
       public void login(View view) {
-    	
+    	  //WebView webview = new WebView(this);
+    	  //setContentView(webview);
+    	  //webview.loadUrl("http://10.0.2.2:3000");
       }
       
       public void logout(View view) {

@@ -32,6 +32,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 import android.util.Base64;
+import android.util.JsonReader;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -103,8 +104,6 @@ private Activity mActivity;
 				//BigInteger Rc  = randomRange(N);
 		List<BigInteger> ais = new ArrayList<BigInteger>(); // The set {a1,a2,...,am}
 		
-		 
-		
 		
 		
 		//Ron, 15. Jul: fetch authorization from server (instead of above code):
@@ -117,8 +116,11 @@ private Activity mActivity;
 		try {
 			Log.d(TAG, "Trying to connect to CA...");
 			HttpClient httpClient = new DefaultHttpClient();
-			HttpGet httpGet = new HttpGet("http://128.195.4.215:3000/authority/download_connections.json");
+			HttpGet httpGet = new HttpGet("http://athena.ics.uci.edu/authority/download_profile.json");
 			HttpResponse response = httpClient.execute(httpGet);
+			
+			int statusCode = response.getStatusLine().getStatusCode();
+			Log.d(TAG, "Status Code CA: " + statusCode);
 			HttpEntity entity = response.getEntity();
 			serverInput = entity.getContent();
 			Log.d(TAG, "Connected to CA");
@@ -131,10 +133,15 @@ private Activity mActivity;
 		try {
 			BufferedReader reader = new BufferedReader(new InputStreamReader(serverInput));
 			StringBuilder stringBuilder = new StringBuilder();
+			
+			
 			String line = null;
+			Log.d(TAG, "*** CA response: ***");
 			while ((line = reader.readLine()) != null) {
 				stringBuilder.append(line + "\n");
+				Log.d(TAG, line);
 			}
+			Log.d(TAG, "******");
 			serverInput.close();
 			serverResult = stringBuilder.toString();
 		} catch (Exception e3) {
@@ -157,6 +164,8 @@ private Activity mActivity;
 		}
 		
 		//Ron, 15. Jul, end of fetching authorization
+
+
 		
 		
 		//save contacts to file
