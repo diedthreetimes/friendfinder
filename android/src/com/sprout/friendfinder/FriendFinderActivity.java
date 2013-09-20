@@ -14,12 +14,14 @@ import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
+/* Aug. 14
 import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.android.SocialAuthListener;
+*/
 
 import com.sprout.finderlib.DeviceList;
 import com.sprout.finderlib.PrivateProtocol;
@@ -47,6 +49,7 @@ import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.os.StrictMode;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.Time;
@@ -56,6 +59,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -91,7 +95,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     private Button mBtButton;
     private Button mWifiButton;
     
-    private SocialAuthAdapter adapter;
+    //private SocialAuthAdapter adapter; //Aug., 14
     
     //these variables are needed for the PSI protocol -> they should rather be put to the message handler class as they are used there...
     CurrentPeer currentPeer;
@@ -121,7 +125,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {        
-        super.onCreate(savedInstanceState);
+    	
+    	//Ron., Aug. 06: just for now: as the connection to the CA should be done in an async. task later on... 
+    	//StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+    	//StrictMode.setThreadPolicy(policy);
+    	
+    	
+    	super.onCreate(savedInstanceState);
         if(D) Log.d(TAG, "+++ ON CREATE +++");
 
         // Set up the window layout
@@ -129,6 +139,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
 
         
         // TODO: Find a way to see if p2pwifi is supported
+        //Ron., Aug. 06: commented out:
+        /*
         mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
         mChannel = mManager.initialize(this, getMainLooper(), null);
         mReceiver = new WiFiDirectBroadcastReceiver(mManager, mChannel, this);
@@ -141,11 +153,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION);
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION);
+        */
         
+        
+        //Ron., Aug. 06: commented out as Bluetooth is not supported in emulator:
+        /*
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-
-        
         
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -153,8 +167,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
             finish();
             return;
         }
+        */
         
         // Add the social library
+        
+        /*
+         * Aug. 14
+         * 
         adapter = new SocialAuthAdapter(new DialogListener() {
         	@Override
 			public void onComplete(Bundle values) {
@@ -187,6 +206,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         //TODO: This is probably not the place for this
         adapter.authorize(this, Provider.LINKEDIN);
         
+        */
+        
     }
     
   //NOTE: This happens when an activity becomes visible
@@ -199,6 +220,10 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           
           // If BT is not on, request that it be enabled.
           // setupChat() will then be called during onActivityResult
+          
+          
+          //Ron, Aug. 06: commented out as it does not run in the emulator with Bluetooth on:
+          /*
           if (!mBluetoothAdapter.isEnabled()) {          
               // Enable the bluetooth adapter
               Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -207,6 +232,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           } else {
               if (mMessageService == null) setupApp();
           }
+          */
           
           
           
@@ -232,7 +258,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         //  }
           
           //WiFi P2P:
-          registerReceiver(mReceiver, mIntentFilter);
+          //Ron, Aug. 08: commented out:
+          //registerReceiver(mReceiver, mIntentFilter);
           
       }
   	
@@ -242,8 +269,10 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           
           findViewById(R.id.connect_button).setOnClickListener(new OnClickListener() {
         	  public void onClick(View v) {
-        		  btConnect();
-        		  mMessageService.start();
+        		  
+        		  //!!!!Ron: Aug. 06: stopped Bluetooth for now to be able to test app in emulator
+        		  //btConnect();
+        		  //mMessageService.start();
         	  }
           });
           
@@ -270,7 +299,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
             //mMessageService.pause();
           
           //WiFi P2P:
-          unregisterReceiver(mReceiver);
+          //Ron., Aug. 06: commented out:
+          //unregisterReceiver(mReceiver);
       }
 
       @Override
@@ -286,10 +316,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           if(D) Log.e(TAG, "--- ON DESTROY ---");
                  
           // Stop the message service
+          //Ron, Aug. 06: commented out:
+          /*
           if (mMessageService != null) {
           	mMessageService.stop();
           	mMessageService = null;
           }
+          */
           
           
       }
@@ -462,7 +495,19 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  mTarget.get().currentPeer.setName(readMessage);
                 	  
                 	  //"2" + 
-                	  mTarget.get().mMessageService.write(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName()); //we should also provide the Linkedin ID here so that the connecting can be done later on
+                	  
+                	  /*
+                	   * 
+                	   * Ron, Aug. 14, removed as lib was removed - needed later on again!!!!!!!!!!
+                	   * 
+                	   * 
+                	   */
+                	 
+                	  //mTarget.get().mMessageService.write(mTarget.get().myProfile.getFirstName() + " " + mTarget.get().myProfile.getLastName()); //we should also provide the Linkedin ID here so that the connecting can be done later on
+                	  
+                	  
+                	  
+                	  
                 	  
                 	  //set my own state for the next phase to the next level
                 	  mTarget.get().state = 3;
@@ -499,7 +544,14 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
               	    //send zis + auth to peer:
               	      //send number of zis first, so that peer knows how many BigInt-Reads it has to conduct:
               	    Integer s = mTarget.get().zis.size();
-              	    mTarget.get().mMessageService.write(s.toString());
+              	    
+              	    
+              	    /*
+              	     * 
+              	     * 
+              	     * Ron, Aug. 14: removed for now as lib was removed
+              	     */
+              	    //mTarget.get().mMessageService.write(s.toString());
               	      
               	      
               	    mTarget.get().state = 4;
@@ -531,7 +583,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	    
                 	  //B sends number of yis to A:
                 	  Integer s = mTarget.get().yis.size();
-                	  mTarget.get().mMessageService.write(s.toString());
+                	  
+                	  /*
+                	     * 
+                	     * 
+                	     * Ron, Aug. 14: removed for now as lib was removed
+                	     */
+                	  //mTarget.get().mMessageService.write(s.toString());
                 	    
                 	    
                 	  mTarget.get().state = 5;
@@ -545,7 +603,15 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  
                 	  //A sends zis to B
                 	  for (int i = 0; i < mTarget.get().zis.size(); i++) {
-              	    	  mTarget.get().mMessageService.write(mTarget.get().zis.get(i));
+              	    	  
+                		  
+                		  
+                		  /*
+                    	     * 
+                    	     * 
+                    	     * Ron, Aug. 14: removed for now as lib was removed
+                    	     */
+                		  //mTarget.get().mMessageService.write(mTarget.get().zis.get(i));
               	      }
                 	  
                 	  mTarget.get().state = 6;
@@ -559,7 +625,12 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
             	  	  if (mTarget.get().peerSet.size() == mTarget.get().peerSetSize) { //i.e. received all elements
             	  		//B sends its yis to A:
                     	  for (int i = 0; i < mTarget.get().yis.size(); i++) {
-                    		  mTarget.get().mMessageService.write(mTarget.get().yis.get(i));
+                    		  /*
+                        	     * 
+                        	     * 
+                        	     * Ron, Aug. 14: removed for now as lib was removed
+                        	     */
+                    		  //mTarget.get().mMessageService.write(mTarget.get().yis.get(i));
                     	  }
             	  		  
             	  		  mTarget.get().state = 7;
@@ -573,7 +644,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  
                 	  if (mTarget.get().peerSet.size() == mTarget.get().peerSetSize) {
                 		//A sends auth to B:
-                    	  mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
+                    	  
+                		  /*
+                    	     * 
+                    	     * 
+                    	     * Ron, Aug. 14: removed for now as lib was removed
+                    	     */
+                		  //mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
                 		  
                 		  mTarget.get().state = 8;
                 	  }
@@ -602,7 +679,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  }
                 	  
                 	  //B sends its aut to A:
-                	  mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
+                	  
+                	  /*
+                	     * 
+                	     * 
+                	     * Ron, Aug. 14: removed for now as lib was removed
+                	     */
+                	  //mTarget.get().mMessageService.write(mTarget.get().authObj.getAuth());
                 	  
                 	  //prepare for receiving computed tags later on:
                 	  mTarget.get().T = new ArrayList<BigInteger>();
@@ -638,7 +721,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 	  for (BigInteger t1i : mTarget.get().peerSet) {
                 		  t1i = t1i.modPow(mTarget.get().Ra, mTarget.get().N);
                 		  mTarget.get().T.add(t1i);
-                		  mTarget.get().mMessageService.write(t1i);
+                		  
+                		  /*
+                    	     * 
+                    	     * 
+                    	     * Ron, Aug. 14: removed for now as lib was removed
+                    	     */
+                		  //mTarget.get().mMessageService.write(t1i);
                 	  }
                 	  
                 	  //prepare for receiving B's computed tags
@@ -658,7 +747,14 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 		  for (BigInteger t2i : mTarget.get().peerSet) {
                 			  t2i = t2i.modPow(mTarget.get().Rb, mTarget.get().N);
                 			  mTarget.get().T2.add(t2i);
-                			  mTarget.get().mMessageService.write(t2i);
+                			  
+                			  
+                			  /*
+                        	     * 
+                        	     * 
+                        	     * Ron, Aug. 14: removed for now as lib was removed
+                        	     */
+                			  //mTarget.get().mMessageService.write(t2i);
                 		  }
                 		  
                 		  
@@ -764,11 +860,19 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       
       
       public void getContactsAsync() {
+    	 
+    	  /*
+    	   * Ron, Aug. 9: don't use socialauth-API any more, but contact our own CA instead
+    	   * 
     	  try {
     		  adapter.getContactListAsync(new SocialContactListener(this)); 
     	  } catch (Exception e) {
     		  Log.d(TAG, e.getMessage());
     	  }
+    	  */
+    	  
+    	  new ContactDownloader().execute(); //perform the contact downloading as an async. task
+    	  
       }
       
 /* Ron
@@ -878,7 +982,12 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       }
       
       public void getProfileAsync() {
-    	  adapter.getUserProfileAsync(new SocialProfileListener(this)); //the actual activity (which is the context) needs to be provided to the Listener
+    	  
+    	  /*
+    	   * Ron., Aug. 14
+    	   */
+    	  
+    	  //adapter.getUserProfileAsync(new SocialProfileListener(this)); //the actual activity (which is the context) needs to be provided to the Listener
       }
       
       //Called when INTENT is returned
@@ -1006,7 +1115,9 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       }
       
       public void login(View view) {
-    	
+    	  //WebView webview = new WebView(this);
+    	  //setContentView(webview);
+    	  //webview.loadUrl("http://10.0.2.2:3000");
       }
       
       public void logout(View view) {
