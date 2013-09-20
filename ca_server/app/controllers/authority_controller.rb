@@ -57,7 +57,7 @@ class AuthorityController < ApplicationController
       if params[:oauth_verifier].nil?
         redirect_to action: 'login', format: request.format.to_sym
         return
-       end
+      end
 
       pin = params[:oauth_verifier]
       atoken, asecret = client.authorize_from_request(session[:rtoken], session[:rsecret], pin)
