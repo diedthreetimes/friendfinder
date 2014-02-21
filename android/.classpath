@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry kind="lib" path="C:/Users/Ronald/finderlib/lib/scprov-jdk15on-1.47.0.1.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Ronald/friendfinder/android/libs/socialauth-4.2.jar"/>
-	<classpathentry kind="lib" path="C:/Users/Ronald/friendfinder/android/libs/socialauth-android.jar"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
+	<classpathentry kind="lib" path="libs/socialauth-4.0.jar"/>
+	<classpathentry kind="lib" path="libs/socialauth-4.2.jar"/>
+	<classpathentry kind="lib" path="libs/socialauth-android.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
