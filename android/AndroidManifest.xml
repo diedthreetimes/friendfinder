@@ -5,11 +5,11 @@
     android:versionName="1.0" >
 
     <uses-sdk android:minSdkVersion="15"
-        	  android:targetSdkVersion="18" />
+        	  android:targetSdkVersion="19" />
 	<uses-feature android:name="android.hardware.wifi.direct" />
-    <!--Ron.: Aug. 06: with Bluetooth it does not work in the emulator  <uses-permission android:name="android.permission.BLUETOOTH"/>  -->
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
-    <!--  Ron, Aug. 06 <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/> -->
+    <uses-permission android:name="android.permission.BLUETOOTH"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission
         android:required="true"
