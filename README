@@ -4,4 +4,4 @@ In order to use the android app you need the FinderLib from zeus
 $ git clone https://#{your-user-name-here}@zeus.ics.uci.edu/git/finderlib.git
 
 
-Add this library along with the android app to your eclipse workspace
+Add this library along with the android app to your eclipse workspace.
