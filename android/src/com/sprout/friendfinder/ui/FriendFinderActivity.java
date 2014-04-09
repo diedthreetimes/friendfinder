@@ -1,57 +1,29 @@
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.ui;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.ref.WeakReference;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
-import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
-/* Aug. 14
-import org.brickred.socialauth.Contact;
-import org.brickred.socialauth.android.DialogListener;
-import org.brickred.socialauth.android.SocialAuthAdapter;
-import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
-import org.brickred.socialauth.android.SocialAuthError;
-import org.brickred.socialauth.android.SocialAuthListener;
-*/
-
-import com.sprout.finderlib.DeviceList;
-import com.sprout.finderlib.PrivateProtocol;
-import com.sprout.finderlib.BluetoothServiceLogger;
-import com.sprout.finderlib.BluetoothService;
-import com.sprout.finderlib.CommunicationService;
-import com.sprout.finderlib.WifiService;
-import com.sprout.friendfinder.CommonFriendsDialogFragment.NoticeCommonFriendsDialog;
-
 import android.app.Activity;
 import android.app.DialogFragment;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.DialogInterface.OnCancelListener;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.wifi.p2p.WifiP2pManager;
 import android.net.wifi.p2p.WifiP2pManager.Channel;
-import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.os.StrictMode;
-import android.provider.Settings;
-import android.text.TextUtils;
 import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
@@ -59,10 +31,26 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.sprout.finderlib.communication.BluetoothService;
+import com.sprout.finderlib.communication.BluetoothServiceLogger;
+import com.sprout.finderlib.communication.CommunicationService;
+import com.sprout.finderlib.communication.WifiService;
+import com.sprout.finderlib.ui.communication.DeviceList;
+import com.sprout.friendfinder.R;
+import com.sprout.friendfinder.R.id;
+import com.sprout.friendfinder.R.layout;
+import com.sprout.friendfinder.R.menu;
+import com.sprout.friendfinder.R.string;
+import com.sprout.friendfinder.crypto.AuthorizationObject;
+import com.sprout.friendfinder.social.ContactDownloader;
+import com.sprout.friendfinder.social.ContactsListObject;
+import com.sprout.friendfinder.social.CurrentPeer;
+import com.sprout.friendfinder.social.ProfileObject;
+import com.sprout.friendfinder.ui.CommonFriendsDialogFragment.NoticeCommonFriendsDialog;
 
 //Ron: this class now implements also the NoticeCommonFriendsDialog interface so that we can get feedback here which button the user pressed when shown the dialog whether he wants to become friends with the peer or not
 
@@ -82,7 +70,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     // Member object for the communication services
     private CommunicationService mMessageService = null; 
     
-    //WiFi P2P
+    //WiFi P2PC
     private WifiP2pManager mManager;
     Channel mChannel;
     BroadcastReceiver mReceiver;

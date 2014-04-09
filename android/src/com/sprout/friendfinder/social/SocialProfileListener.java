@@ -3,7 +3,7 @@
  * store the info in an object in a file
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.social;
 
 import java.io.File;
 import java.io.FileOutputStream;

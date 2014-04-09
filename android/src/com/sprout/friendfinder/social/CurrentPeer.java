@@ -2,7 +2,7 @@
  * handle the information of the current peer (i.e. the peer that we are connected to at the moment) here
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.social;
 
 public class CurrentPeer {
 	
@@ -10,7 +10,7 @@ public class CurrentPeer {
 	private String name;
 	private String[] inCommon;
 	
-	CurrentPeer() {
+	public CurrentPeer() {
 		
 	}
 	

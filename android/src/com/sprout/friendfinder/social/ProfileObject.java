@@ -4,7 +4,7 @@
  * read object from file in offline mode before doing the PSI
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.social;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -20,25 +20,25 @@ public class ProfileObject implements Serializable {
 	private String lastName; 
 	private String id;
 	
-	ProfileObject() {
+	public ProfileObject() {
 		
 	}
 	
-	ProfileObject(String firstName, String lastName, String id) {
+	public ProfileObject(String firstName, String lastName, String id) {
 		this.firstName = firstName;
 		this.lastName = lastName; 
 		this.id = id;
 	}
 	
-	String getFirstName() {
+	public String getFirstName() {
 		return this.firstName;
 	}
 	
-	String getLastName() {
+	public String getLastName() {
 		return this.lastName;
 	}
 	
-	String getId() {
+	public String getId() {
 		return this.id;
 	}
 	

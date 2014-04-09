@@ -3,7 +3,13 @@
  *  a callback is done to FriendFinderActivity to notify it whether the user wants to become friend with the peer or not; the result is handled in FriendFinderActivity
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.ui;
+
+import com.sprout.friendfinder.R;
+import com.sprout.friendfinder.R.id;
+import com.sprout.friendfinder.R.layout;
+import com.sprout.friendfinder.R.string;
+import com.sprout.friendfinder.social.CurrentPeer;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

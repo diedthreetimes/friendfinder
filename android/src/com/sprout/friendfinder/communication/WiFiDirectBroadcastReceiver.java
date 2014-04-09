@@ -3,7 +3,7 @@
  * deprecated; use old WiFi functionality instead
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.communication;
 
 import java.io.OutputStream;
 import java.net.InetSocketAddress;

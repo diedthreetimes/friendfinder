@@ -2,7 +2,7 @@
  * Ron: The CA's public key (N, e), the random number Rc as well as the authorization of the set of contacts by CA are put into this object in order to store it on the user's device and read it later on (during offline phase) when the PSI shall be done
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.crypto;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

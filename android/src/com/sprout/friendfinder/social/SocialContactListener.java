@@ -4,7 +4,7 @@
  *  
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.social;
 
 import java.io.BufferedReader;
 import java.io.FileOutputStream;
@@ -28,6 +28,8 @@ import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.android.SocialAuthListener;
 import org.json.JSONObject;
+
+import com.sprout.friendfinder.crypto.AuthorizationObject;
 
 import android.app.Activity;
 import android.content.Context;

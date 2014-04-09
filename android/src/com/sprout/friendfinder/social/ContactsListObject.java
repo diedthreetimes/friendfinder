@@ -4,7 +4,7 @@
  * the object is used for storing received contacts on the file system and reading them from the file when in offline mode
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.social;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

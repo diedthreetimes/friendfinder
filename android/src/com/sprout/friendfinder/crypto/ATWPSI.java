@@ -1,4 +1,4 @@
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.crypto;
 
 /*
  * Ron: Todo: refactor the protocol from FriendFinder Activity to this class
@@ -6,8 +6,8 @@ package com.sprout.friendfinder;
 
 import java.util.List;
 
-import com.sprout.finderlib.AbstractPSIProtocol;
-import com.sprout.finderlib.BluetoothService;
+import com.sprout.finderlib.crypto.AbstractPSIProtocol;
+import com.sprout.finderlib.communication.BluetoothService;
 
 public class ATWPSI extends AbstractPSIProtocol {
 

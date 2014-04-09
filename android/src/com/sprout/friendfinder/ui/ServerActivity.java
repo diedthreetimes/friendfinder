@@ -2,7 +2,7 @@
  * deprecated; use old WiFi functionality instead
  */
 
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.ui;
 
 import java.io.InputStream;
 import java.net.ServerSocket;

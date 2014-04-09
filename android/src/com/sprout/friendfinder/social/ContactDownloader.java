@@ -1,4 +1,4 @@
-package com.sprout.friendfinder;
+package com.sprout.friendfinder.social;
 
 import java.io.BufferedReader;
 import java.io.IOException;
