@@ -33,8 +33,8 @@
             </intent-filter>
         </activity>
         
-        <activity android:name="com.sprout.finderlib.DeviceList" />
-        <service android:name="com.sprout.finderlib.PSI_C"/>
+        <activity android:name="com.sprout.finderlib.ui.communication.DeviceList" />
+        <service android:name="com.sprout.finderlib.crypto.PSI_C"/>
     </application>
     
     

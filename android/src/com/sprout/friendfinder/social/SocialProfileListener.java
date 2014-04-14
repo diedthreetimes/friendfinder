@@ -26,6 +26,8 @@ import android.widget.Toast;
 
 public final class SocialProfileListener implements SocialAuthListener<org.brickred.socialauth.Profile> {
 
+	private static final String TAG = SocialProfileListener.class.getSimpleName();
+	
 	private Activity mActivity;
 	
 	public SocialProfileListener(Activity act) {
@@ -42,10 +44,10 @@ public final class SocialProfileListener implements SocialAuthListener<org.brick
 
 	@Override
 	public void onExecute(org.brickred.socialauth.Profile profile) {
-		Log.d("Social Profile Listener", "callback happened");
+		Log.d(TAG, "callback happened");
 		
-		Log.d("Social Profile Listener", "Your profile: \n");
-		Log.d("Social Profile Listener", "Your name: " + profile.getFirstName() + " " + profile.getLastName());
+		Log.d(TAG, "Your profile: \n");
+		Log.d(TAG, "Your name: " + profile.getFirstName() + " " + profile.getLastName());
 		//Toast.makeText(mActivity, "Your profile information is: " + profile.getFirstName() + " " + profile.getLastName(), Toast.LENGTH_SHORT).show();
 		
 		ProfileObject myProfile = new ProfileObject(profile.getFirstName(), profile.getLastName(), profile.getValidatedId());
@@ -62,9 +64,9 @@ public final class SocialProfileListener implements SocialAuthListener<org.brick
 			objectOutput = new ObjectOutputStream(fileOutput);
 			myProfile.writeObject(objectOutput);
 			objectOutput.close();
-			Log.d("Social Profile Listener", "Profile saved");
+			Log.d(TAG, "Profile saved");
 		} catch (Exception e) {
-			Log.d("Social Profile Listener", e.toString());
+			Log.d(TAG, e.toString());
 		}
 	}
 
