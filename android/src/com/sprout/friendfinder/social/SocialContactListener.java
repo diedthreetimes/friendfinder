@@ -79,31 +79,31 @@ private Activity mActivity;
 				
 		BigInteger N,e;
 			
-		/*
+		
 		BigInteger p,q,d;
-				p = new BigInteger("00dba2d30dfc225ffcd894015d8971" +
-						"6c2693e7d35c051670eb850337a41f" + 
-				        "719855ebc0839747651487a4f178cd" +
-				        "3f5c17cccb66f7baa8f8f54c3c2021" + 
-				        "9a95f37f41", 16);
-				q = new BigInteger("00d10e691f38413dc6ca084a403059" +
-						"de7934422b44436ffc8b4b35572e24" + 	
-						"e5df78615bfabc7251f1e050bb5a75" +
-						"598e0d957c9ae96457442a43db9130" +
-						"4c64d11e9b",16);
-				N = p.multiply(q);
-				e = BigInteger.valueOf(3);
-		*/
-				
-				//Ron, 6.8.: use the new CA's public key:
-				String nString = "0282010100CE08801F12CD287F1ED1A6C66CA46A62F8C01E343320F64DB7DA99DFEBAEF49D3BDDCC723597B687C5C11343289A1FCCAD0B60C9DDE3D6364981DAF334617185C48914EEDD8E5FE0909E33BDB8255E2613936F014A73FE453E739B5E4A83A578D49D1B79C8FAFAB474E14C004FE6C13F594CC55EC5FB8F017C82CE1E4EF13D1E63C717D6BD6D93D0D61914C992621C86FB8A66E793934154F392CEA183D8D93CFEF6955C9919F47441BE25DA1E0EDE2BC83BDB4A8896B772A220F9E9DAD5C462C53E1CDD7CCC18F6530DE369F22CD99F5EEA75660A2035170B797D907AF9756509574A8473E726575F5A344C51797CB7FA05B51BB1BAF1A47FB60F1F17C33D01";
-				N = new BigInteger(nString, 16); 
-				e = BigInteger.valueOf(65537);
-				
-				//d = e.modInverse(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE)));
-				
-				//get the secrets from server instead, Ron. 15. Jul: (done further down in the code now)
-				//BigInteger Rc  = randomRange(N);
+		p = new BigInteger("00dba2d30dfc225ffcd894015d8971" +
+				"6c2693e7d35c051670eb850337a41f" + 
+				"719855ebc0839747651487a4f178cd" +
+				"3f5c17cccb66f7baa8f8f54c3c2021" + 
+				"9a95f37f41", 16);
+		q = new BigInteger("00d10e691f38413dc6ca084a403059" +
+				"de7934422b44436ffc8b4b35572e24" + 	
+				"e5df78615bfabc7251f1e050bb5a75" +
+				"598e0d957c9ae96457442a43db9130" +
+				"4c64d11e9b",16);
+		N = p.multiply(q);
+		e = BigInteger.valueOf(3);
+
+
+		//Ron, 6.8.: use the new CA's public key:
+		//String nString = "0282010100CE08801F12CD287F1ED1A6C66CA46A62F8C01E343320F64DB7DA99DFEBAEF49D3BDDCC723597B687C5C11343289A1FCCAD0B60C9DDE3D6364981DAF334617185C48914EEDD8E5FE0909E33BDB8255E2613936F014A73FE453E739B5E4A83A578D49D1B79C8FAFAB474E14C004FE6C13F594CC55EC5FB8F017C82CE1E4EF13D1E63C717D6BD6D93D0D61914C992621C86FB8A66E793934154F392CEA183D8D93CFEF6955C9919F47441BE25DA1E0EDE2BC83BDB4A8896B772A220F9E9DAD5C462C53E1CDD7CCC18F6530DE369F22CD99F5EEA75660A2035170B797D907AF9756509574A8473E726575F5A344C51797CB7FA05B51BB1BAF1A47FB60F1F17C33D01";
+		//N = new BigInteger(nString, 16); 
+		//e = BigInteger.valueOf(65537);
+
+		d = e.modInverse(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE)));
+
+		//get the secrets from server instead, Ron. 15. Jul: (done further down in the code now)
+		BigInteger Rc  = randomRange(N);
 		List<BigInteger> ais = new ArrayList<BigInteger>(); // The set {a1,a2,...,am}
 		
 		
@@ -113,6 +113,7 @@ private Activity mActivity;
 		// 2. Not do this at all for now, instead we should not use the server.
 		
 		//Ron, 15. Jul: fetch authorization from server (instead of above code):
+		/*
 		InputStream serverInput = null;
 		String serverResult = null;
 		JSONObject serverArray = null;
@@ -134,6 +135,7 @@ private Activity mActivity;
 		} catch (Exception e2) {
 			Log.d("SocialContactListner", "Connection error to LinkedIn CA: " + e2.toString());
 		}
+		
 		
 		//convert response:
 		try {
@@ -171,6 +173,7 @@ private Activity mActivity;
 		
 		//Ron, 15. Jul, end of fetching authorization
 
+		*/
 
 		
 		
@@ -182,7 +185,7 @@ private Activity mActivity;
 			contacts.add(profile);
 						
 			//Ron, 15. Jul.: instead of computing ais here, get them from the server (actually, we don't need to fetch them here as we can compute them later on during the PSI protocol):
-			//ais.add(hash(c.getId().getBytes(), (byte)0).modPow(Rc, N));
+			ais.add(hash(c.getId().getBytes(), (byte)0).modPow(Rc, N)); // TODO: Should we really do this here?
 			
 			
 		}
@@ -191,7 +194,8 @@ private Activity mActivity;
 		/*
 		 * Ron, 15. Jul.: get the authorization from the server instead
 		 * warning: the hashing on the server-side might have been done different from here (and thus, the verification in the PSI protocol might be needed to be modified?)
-		 
+		 */
+		
 		//compute hash of product of ais instead of their concatenation
 		BigInteger auth = BigInteger.ONE;
 		for (BigInteger ai : ais) {
@@ -202,7 +206,7 @@ private Activity mActivity;
 		auth = auth.modPow(d, N);
 		Log.d(TAG, "Auth(a): " + auth.toString());
 		
-		*/
+		/*
 		BigInteger auth = null; 
 		String authString;
 		try {
@@ -222,7 +226,7 @@ private Activity mActivity;
 		} catch (Exception e7) {
 			Log.d(TAG, "Secret Rc could not be retrieved: " + e7.toString());
 		}
-		
+		*/
 		
 		ContactsListObject clo = new ContactsListObject(contacts);
 		
@@ -260,9 +264,9 @@ private Activity mActivity;
 	}
 	
 	//this is not the right place for the functionality:
-	//Ron, 15. Jul.: not needed any longer as we get the authorization from the server:
+	//TODO: Ron, 15. Jul.: not needed any longer as we get the authorization from the server:
 	
-	/*
+	
 protected BigInteger hash(byte [] message, byte selector){
 		
 		// input = selector | message
@@ -297,8 +301,6 @@ protected BigInteger randomRange(BigInteger range){
 	return temp;
 	
 }
-
-*/
 	
 	
 }
