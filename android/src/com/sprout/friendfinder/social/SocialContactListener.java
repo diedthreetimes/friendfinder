@@ -41,7 +41,7 @@ import android.widget.Toast;
 
 public final class SocialContactListener implements SocialAuthListener<List<Contact>> { 
 
-	private final String TAG = "SocialContactListener";
+	private final String TAG = SocialContactListener.class.getSimpleName();
 	
 private Activity mActivity;
 	
@@ -60,13 +60,13 @@ private Activity mActivity;
 	@Override
 	public void onExecute(List<Contact> contactList) {
 		
-		Log.d("Social Contact Listener", "callback happened");
-		Log.d("Social Contact Listener", "Number of Contacts: " + contactList.size());
+		Log.d(TAG, "callback happened");
+		Log.d(TAG, "Number of Contacts: " + contactList.size());
 		
 		for (Contact p : contactList) {
-			Log.d("Social Contact Listener", "First Name: " + p.getFirstName());
-			Log.d("Social Contact Listener", "Last Name: " + p.getLastName());
-			Log.d("Social Contact Listener", "ID: " + p.getId() + "\n");
+			Log.d(TAG, "First Name: " + p.getFirstName());
+			Log.d(TAG, "Last Name: " + p.getLastName());
+			Log.d(TAG, "ID: " + p.getId() + "\n");
 		}
 		
 		Log.d(TAG, "Your " + contactList.size() + " contacts have been downloaded");
@@ -107,6 +107,10 @@ private Activity mActivity;
 		List<BigInteger> ais = new ArrayList<BigInteger>(); // The set {a1,a2,...,am}
 		
 		
+		
+		// TODO: We need to do many things here.
+		// 1. Not do this in an async task.
+		// 2. Not do this at all for now, instead we should not use the server.
 		
 		//Ron, 15. Jul: fetch authorization from server (instead of above code):
 		InputStream serverInput = null;
@@ -232,9 +236,9 @@ private Activity mActivity;
 			objectOutput = new ObjectOutputStream(fileOutput);
 			clo.writeObject(objectOutput);
 			objectOutput.close();
-			Log.d("Social Contact Listener", "Contacts saved");
+			Log.d(TAG, "Contacts saved");
 		} catch (Exception e1) {
-			Log.d("Social Contact Listener", e1.toString());
+			Log.d(TAG, e1.toString());
 		}
 		
 		//Toast.makeText(mActivity, "Contact list saved", Toast.LENGTH_SHORT).show();
@@ -249,9 +253,9 @@ private Activity mActivity;
 			objectOutput = new ObjectOutputStream(fileOutput);
 			authObj.writeObject(objectOutput);
 			objectOutput.close();
-			Log.d("Social Contact Listener", "Authorization saved");
+			Log.d(TAG, "Authorization saved");
 		} catch (Exception e1) {
-			Log.d("Social Contact Listener", e1.toString());
+			Log.d(TAG, e1.toString());
 		}
 	}
 	
