@@ -497,6 +497,14 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
               	    //load authorization data from file as well:
               	    mTarget.get().loadAuthorizationFromFile();
               	    
+              	    if(true) {
+              	    	if(mTarget.get().authObj.getR() == null)
+              	    		Log.d(TAG, "Ra is null");
+              	    	if(mTarget.get().authObj.getN() == null)
+              	    		Log.d(TAG, "N is null");
+
+              	    }
+              	    
               	    mTarget.get().Ra = mTarget.get().authObj.getR(); //Rc as chosen by the CA when certifying the set of contacts
               	    mTarget.get().N = mTarget.get().authObj.getN();
               	    mTarget.get().e = mTarget.get().authObj.gete();
@@ -686,10 +694,11 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 		  for (int l = 0; l < mTarget.get().T.size(); l++) {
                 			  for (int l2 = 0; l2 < mTarget.get().T2.size(); l2++) {
                 				  if (mTarget.get().T.get(l).equals(mTarget.get().T2.get(l2))) {
-                				  inCommon2.add(mTarget.get().contactList.get(l2).getFirstName() + " " + mTarget.get().contactList.get(l2).getLastName());
+                					  inCommon2.add(mTarget.get().contactList.get(l2).getFirstName() + " " + mTarget.get().contactList.get(l2).getLastName());
                 				  }
-                				  }
+                			  }
                 		  }
+                		  // TODO: Why did we find an extra 20 common friends?
                 		  Log.d(TAG, "Found " + inCommon2.size() + " common friends");
                 		  
                 		  String[] inCommon = new String[inCommon2.size()];
