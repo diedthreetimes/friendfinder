@@ -16,6 +16,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.http.HttpEntity;
@@ -42,6 +43,7 @@ import android.widget.Toast;
 public final class SocialContactListener implements SocialAuthListener<List<Contact>> { 
 
 	private final String TAG = SocialContactListener.class.getSimpleName();
+	private final boolean D = true;
 	
 private Activity mActivity;
 	
@@ -63,10 +65,16 @@ private Activity mActivity;
 		Log.d(TAG, "callback happened");
 		Log.d(TAG, "Number of Contacts: " + contactList.size());
 		
-		for (Contact p : contactList) {
-			Log.d(TAG, "First Name: " + p.getFirstName());
-			Log.d(TAG, "Last Name: " + p.getLastName());
-			Log.d(TAG, "ID: " + p.getId() + "\n");
+		for (Iterator<Contact> it = contactList.iterator(); it.hasNext(); ) {
+			Contact p = it.next();
+			
+			if(p.getFirstName().equals("private")) {
+				it.remove();
+			} else {
+				if(D) Log.d(TAG, "First Name: " + p.getFirstName());
+				if(D) Log.d(TAG, "Last Name: " + p.getLastName());
+				if(D) Log.d(TAG, "ID: " + p.getId() + "\n");
+			}
 		}
 		
 		Log.d(TAG, "Your " + contactList.size() + " contacts have been downloaded");

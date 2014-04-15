@@ -698,7 +698,6 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                 				  }
                 			  }
                 		  }
-                		  // TODO: Why did we find an extra 20 common friends?
                 		  Log.d(TAG, "Found " + inCommon2.size() + " common friends");
                 		  
                 		  String[] inCommon = new String[inCommon2.size()];

@@ -33,10 +33,15 @@ class AuthorityController < ApplicationController
     with_log_in do |c|
       # @profile = client.profile
 
-      friends = c.connections[:all]
+      connections = c.connections[:all]
+      private_friends = connections.select{|f| f.first_name == "private"}
+      friends = connections.select{|f| f.first_name != "private"}
 
       resp = {}
+      resp[:count] = friends.count
       resp[:connections] = friends
+      resp[:privates] = private_friends.count
+      #resp[:connections] = c.profile( id: friends.first["id"], fields: %w(positions) )
 
       resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v[:id]})
 
