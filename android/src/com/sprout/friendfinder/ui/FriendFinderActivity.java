@@ -1,8 +1,10 @@
 package com.sprout.friendfinder.ui;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
+import java.lang.reflect.Field;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -10,12 +12,19 @@ import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.accounts.AccountManagerCallback;
+import android.accounts.AccountManagerFuture;
+import android.accounts.AuthenticatorException;
+import android.accounts.OperationCanceledException;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
@@ -184,8 +193,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         // Add providers and enable button
         adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
         
-        //TODO: This is probably not the place for this
-        adapter.authorize(this, Provider.LINKEDIN);
+        login(); // Ensure we are always logged in
         
     }
     
@@ -1036,15 +1044,75 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     	  setContentView(R.layout.main);
     	  setupApp();
       }
+
       
       public void login(View view) {
-    	  //WebView webview = new WebView(this);
-    	  //setContentView(webview);
-    	  //webview.loadUrl("http://10.0.2.2:3000");
+    	  login();
+      }
+      
+      public void login() {
+    	  
+    	  /** As of now it seems that the linkedin authenticator will not work. We should revist this later.
+    	   * 
+    	   
+    	  
+    	  AccountManager accountManager = AccountManager.get(this);
+    	  Account[] accounts = accountManager.getAccountsByType("com.linkedin.android");
+    	  
+    	  
+    	  if (accounts.length != 0) {
+    		  for (Account account: accounts) {
+    			  Log.d(TAG, "Account: " + account.toString());
+    		  }
+
+    		  // TODO: Prompt user to select an account, and remember decision. (but make sure remembered account is still present)
+    		  Account selected = accounts[0];
+
+    		  //accountManager.getAuthToken(selected, selected.type, null, this, new AccountManagerCallback<Bundle>() {
+    		  accountManager.getAuthToken(selected, selected.type, null, true, new AccountManagerCallback<Bundle>() {
+    		  
+				@Override
+				public void run(AccountManagerFuture<Bundle> future) {
+					try {
+						Bundle res = future.getResult();
+						Log.i(TAG, "Account Name: " + res.getString(AccountManager.KEY_ACCOUNT_NAME));
+						Log.i(TAG, "Account Type: " + res.getString(AccountManager.KEY_ACCOUNT_TYPE));
+						Log.i(TAG, "AuthToken: " + res.getString(AccountManager.KEY_AUTHTOKEN));
+					} catch (OperationCanceledException e) {
+						Log.e(TAG, "User canceled the request", e);
+					} catch (AuthenticatorException e) {
+						Log.e(TAG, "Authenticator failed to respond", e);
+					} catch (IOException e) {
+						Log.e(TAG, "Error retrieving token. Netowrk trouble? ", e);
+					}
+				}
+    		  }, new Handler() {
+    			  
+    		  });
+    		  
+    		  // set token. If auth error occurs must call invalidateAuthToken
+    	  } 
+    	  // LinkedIn app is not installed. Fall back to socialauth. 
+    	  else { 	 */ 
+    		  if(D) Log.d(TAG, "Logging in via socialauth");
+        	  adapter.authorize(this, Provider.LINKEDIN);  
+    	  //}
       }
       
       public void logout(View view) {
     	  
+    	  // TODO: Use reflection to see if we are signed in already.
+    	  // otherwise we get an error
     	  
+    	  
+    	  if(D) Log.d(TAG, "Loggingout from socialauth");
+    	  try {
+    		  // TODO: Does this actually log you out. It appears like it does not
+    		  adapter.signOut(Provider.LINKEDIN.name());    
+    	  } catch (Exception e) {
+    		  Log.e(TAG,"Could not logout. Are you logged in", e);
+    	  }
+    	  
+    	  // TODO: We need to also delete saved information here.
       }
 }
