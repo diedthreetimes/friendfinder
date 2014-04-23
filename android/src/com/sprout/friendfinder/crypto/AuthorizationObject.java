@@ -8,9 +8,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
-import java.util.List;
 
 public class AuthorizationObject implements Serializable {
+	private static final long serialVersionUID = -8723688620635455716L;
+	
 	private BigInteger R;
 	private BigInteger auth;
 	private BigInteger N, e;

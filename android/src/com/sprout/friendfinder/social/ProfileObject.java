@@ -56,4 +56,8 @@ public class ProfileObject implements Serializable {
 		return this;
 	}
 
+	public String getDisplayName() {
+		return firstName + " " + lastName;
+	}
+
 }

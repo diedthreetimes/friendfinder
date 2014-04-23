@@ -3,12 +3,9 @@ package com.sprout.friendfinder.ui;
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.brickred.socialauth.android.DialogListener;
@@ -47,10 +44,10 @@ import com.sprout.finderlib.communication.WifiService;
 import com.sprout.finderlib.ui.communication.DeviceList;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.communication.WiFiDirectBroadcastReceiver;
+import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.social.ContactDownloader;
 import com.sprout.friendfinder.social.ContactsListObject;
-import com.sprout.friendfinder.social.CurrentPeer;
 import com.sprout.friendfinder.social.ProfileObject;
 import com.sprout.friendfinder.social.SocialContactListener;
 import com.sprout.friendfinder.social.SocialProfileListener;
@@ -95,7 +92,6 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     ProfileObject myProfile;
     
     List<ProfileObject> contactList;
-    AuthorizationObject authObj;
     
     //to store key-value pairs: 
     SharedPreferences sharedPreference;
@@ -538,8 +534,8 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       /*
        * Ron, the CA's authorization for the set of contacts has been saved to file before and needs to be loaded to be able to do the PSI
        */
-      public void loadAuthorizationFromFile() {
-    	authObj = new AuthorizationObject();
+      public AuthorizationObject loadAuthorizationFromFile() {
+    	AuthorizationObject authObj = new AuthorizationObject();
     	String filename = "authorization";
     	FileInputStream fileInput;
 		ObjectInputStream objectInput; 
@@ -550,35 +546,36 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
 			authObj.readObject(objectInput);
 			objectInput.close();
 			Log.d(TAG, "Authorization loaded");
+			
+			return authObj;
 				
 		} catch (Exception e) {
 			Log.d(TAG, "Authorization has not been granted so far");
 			Toast.makeText(this, "You need to get a certification for your friends first", Toast.LENGTH_SHORT).show();
+			return null;
 		}
       }
-      
-/* Ron
- * 
- */
+
       public void checkCommonFriends() {
-    	  
-    	  // TODO: Initiate a connection using the ATWPSI class
-    	  
     	  //assume established communication channel with peer 
+    	  
     	  loadProfileFromFile(); //need to get our own profile information first
+    	  loadContactsFromFile(); 
     	  
-    	  //tell the peer who he is dealing with  
-    	  //"1" + 
-    	  //mMessageService.write(myProfile.getFirstName() + " " + myProfile.getLastName()); //we should also provide the id here so that the connecting can be done later on
-    	  //state = 2;
+    	  AuthorizationObject authobj = loadAuthorizationFromFile();
     	  
-    	  // input should be something of the form
-    	  // loadProfileFromFile()
-    	  // loadAuthorizationFromFile()
+    	  if (authobj == null || contactList == null) {
+    		  Log.i(TAG, "Authorization or contactList not loaded, aborting test");  
+    		  return;
+    	  }
     	  
-    	  // TODO: We may want to accept arbitrary objects as inputs to conduct test
-    	  //   The easiest way to do that is to provide some form of interface. Like (PSI_Input)
-    	  // conductTest( contactList.collect{|x| x.id} )
+    	  
+    	  String[] input = new String[contactList.size()];
+    	  for( int i=0; i < contactList.size(); i++) {
+    		  input[i] = contactList.get(i).getId();
+    	  }
+   
+    	  (new CommonFriendsTest(mMessageService, authobj)).execute(input);
     	  
       }
       
@@ -757,5 +754,40 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     	  }
     	  
     	  // TODO: We need to also delete saved information here.
+      }
+      
+      
+      // This extends AsyncTask, and thus we provide the UI specific methods here
+      private class CommonFriendsTest extends ATWPSI {
+
+		public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject) {
+			super(s, authObject);
+		}
+		
+		@Override
+		public void onPreExecute() {
+			Log.i(TAG, "About to execute the common friends protocol");
+		}
+		
+		@Override
+		public void onPostExecute(List<String> result) {
+			Log.i(TAG, "Common friends protocol complete");
+			
+			// TODO: This is a strange place to do this, it would make more sense wrapped in a contact list object.
+			HashMap<String, String> idToNameMap = new HashMap<String, String>();
+			for (ProfileObject prof : contactList) {
+				idToNameMap.put( prof.getId(), prof.getDisplayName());
+			}
+			
+			List<String> commonFriends = new ArrayList<String>();
+			for (String id : result){
+				commonFriends.add(idToNameMap.get(id));
+			}
+			
+			CommonFriendsDialogFragment newFragment = new CommonFriendsDialogFragment(); //DialogFragme
+			newFragment.setCommonFriends(commonFriends);
+			newFragment.show(getFragmentManager(), "check-common-friends");
+		}
+    	  
       }
 }

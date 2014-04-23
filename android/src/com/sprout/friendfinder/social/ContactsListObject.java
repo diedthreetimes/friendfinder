@@ -9,7 +9,6 @@ package com.sprout.friendfinder.social;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ContactsListObject implements Serializable {
@@ -39,6 +38,7 @@ public class ContactsListObject implements Serializable {
 		out.writeObject(this.contactList);
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		this.contactList = (List<ProfileObject>) in.readObject();
 	}

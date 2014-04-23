@@ -5,31 +5,29 @@
 
 package com.sprout.friendfinder.ui;
 
-import com.sprout.friendfinder.R;
-import com.sprout.friendfinder.R.id;
-import com.sprout.friendfinder.R.layout;
-import com.sprout.friendfinder.R.string;
-import com.sprout.friendfinder.social.CurrentPeer;
+import java.util.Collection;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.TextView;
+
+import com.sprout.friendfinder.R;
 
 public class CommonFriendsDialogFragment extends DialogFragment {
 	
-	private CurrentPeer currentPeer;
+	private String[] commonFriends;
 	
-	public void setCurrentPeer(CurrentPeer currentPeer) {
-		this.currentPeer = currentPeer;
+	public void setCommonFriends(String[] commonFriends) {
+		this.commonFriends = commonFriends;
+	}
+	
+	public void setCommonFriends(Collection<String> commonFriends) {
+		setCommonFriends(commonFriends.toArray(new String[0]));
 	}
 	
 	
@@ -79,8 +77,8 @@ public class CommonFriendsDialogFragment extends DialogFragment {
 		
 			
 		
-		ArrayAdapter adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, currentPeer.getCommonFriends());
-		ListView listView = (ListView) getActivity().findViewById(R.id.listView1);
+		ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, commonFriends);
+		// ListView listView = (ListView) getActivity().findViewById(R.id.listView1);
 		
 		
 		builder.setAdapter(adapter, null);
