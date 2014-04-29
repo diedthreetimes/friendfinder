@@ -66,7 +66,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     
     // Intent request codes
     //TODO: Refactor this out
-    private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
+    private static final int REQUEST_CONNECT_DEVICE = 1; // Intent code for the Device List
     private static final int REQUEST_ENABLE_BT = 3; 
     private static final int REQUEST_DISCOVERABLE = 4;
 	
@@ -226,7 +226,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
         	  findViewById(R.id.connect_button).setOnClickListener(new OnClickListener() {
         		  public void onClick(View v) {
         			  btConnect();
-        			  mMessageService.start();
+        			  mMessageService.start(false);
         		  }
         	  });
           } else {
@@ -407,7 +407,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                   if(D) Log.i(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
                   switch (msg.arg1) {
                   case CommunicationService.STATE_CONNECTED:
-                  	target.finishActivity( REQUEST_CONNECT_DEVICE_SECURE );
+                  	target.finishActivity( REQUEST_CONNECT_DEVICE );
                       
                   	//setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
            	
@@ -457,7 +457,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
               	//if(connectionIndicator != null) connectionIndicator.dismiss();
               	
               	Intent serverIntent = new Intent(target, DeviceList.class);
-      	        target.startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+      	        target.startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
       	        break;
           }
       }};
@@ -599,10 +599,10 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       public void onActivityResult(int requestCode, int resultCode, Intent data) {
           if(D) Log.d(TAG, "onActivityResult " + resultCode);
           switch (requestCode) {
-          case REQUEST_CONNECT_DEVICE_SECURE:
+          case REQUEST_CONNECT_DEVICE:
               // When DeviceListActivity returns with a device to connect
               if (resultCode == Activity.RESULT_OK) {
-                  connectDevice(data, true);
+                  connectDevice(data, false);
               }
               break;
           case REQUEST_ENABLE_BT:
@@ -661,7 +661,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     	  // Launch the DeviceListActivity to see devices and do scan
     	  Intent serverIntent = new Intent(this, DeviceList.class);
     	  serverIntent.putExtra(CommunicationService.EXTRA_SERVICE_TRANFER, now.format2445());
-    	  startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+    	  startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE);
       }
       
       public void syncnow(View view) {
