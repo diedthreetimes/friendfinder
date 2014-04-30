@@ -58,9 +58,9 @@ import com.sprout.friendfinder.ui.CommonFriendsDialogFragment.NoticeCommonFriend
  *  here which button the user pressed when shown the dialog whether he wants to become friends with the peer or not
  */
 
-public class FriendFinderActivity extends Activity implements NoticeCommonFriendsDialog {
+public class MainActivity extends Activity implements NoticeCommonFriendsDialog {
 	
-	private static final String TAG = FriendFinderActivity.class.getSimpleName();
+	private static final String TAG = MainActivity.class.getSimpleName();
     private static final boolean D = true;
     private static final boolean benchmarkBandwidth = false;
     
@@ -337,9 +337,9 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           //TODO: update this to use an interface instead
           //      This should allows us to move this out of this class
           if(benchmarkBandwidth){
-          	mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+          	mMessageService = new BluetoothServiceLogger(MainActivity.this, new mHandler(MainActivity.this));
           }else {
-          	mMessageService =  new BluetoothService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+          	mMessageService =  new BluetoothService(MainActivity.this, new mHandler(MainActivity.this));
           }
           
           if (mBluetoothAdapter.getScanMode() !=
@@ -369,7 +369,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
     	  if(benchmarkBandwidth){
     		  //mMessageService = new BluetoothServiceLogger(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
           }else {
-        	  mMessageService =  new WifiService(FriendFinderActivity.this, new mHandler(FriendFinderActivity.this));
+        	  mMessageService =  new WifiService(MainActivity.this, new mHandler(MainActivity.this));
           }
             
     	  launchDeviceList();
@@ -392,13 +392,13 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
       
    // The Handler that gets information back from the BluetoothService
       static class mHandler extends Handler {
-    	  private final WeakReference<FriendFinderActivity> mTarget;
-          mHandler(FriendFinderActivity target) {
-        	  mTarget = new WeakReference<FriendFinderActivity>(target);
+    	  private final WeakReference<MainActivity> mTarget;
+          mHandler(MainActivity target) {
+        	  mTarget = new WeakReference<MainActivity>(target);
           }
     	  @Override
           public void handleMessage(Message msg) {
-    		  FriendFinderActivity target = mTarget.get();
+    		  MainActivity target = mTarget.get();
     		  if(target == null)
     			  return;
     		  
@@ -620,6 +620,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
                   Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
                   finish();
               }
+              break;
           case REQUEST_DISCOVERABLE:
           	//TODO: think about what if the user presses no?
           	if( resultCode == RESULT_CANCELED ){
@@ -627,6 +628,7 @@ public class FriendFinderActivity extends Activity implements NoticeCommonFriend
           	}
           		
           	launchDeviceList();
+          	break;
           }
       }
       
