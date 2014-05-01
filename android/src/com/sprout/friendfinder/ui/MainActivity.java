@@ -58,6 +58,12 @@ import com.sprout.friendfinder.ui.CommonFriendsDialogFragment.NoticeCommonFriend
  *  here which button the user pressed when shown the dialog whether he wants to become friends with the peer or not
  */
 
+
+// Main TODO: Move the core communication functionality into a Service class
+// This service class should bypass the DeviceList, in doing so it must implement callbacks for onDiscovery, and onDiscovery complete.
+// It is important to note, that attempting to connect to a device should not happen until discovery is completed.
+// We may want to integrate this into the bluetooth service, i'm not sure. 
+
 public class MainActivity extends Activity implements NoticeCommonFriendsDialog {
 	
 	private static final String TAG = MainActivity.class.getSimpleName();
@@ -344,8 +350,10 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
           
           if (mBluetoothAdapter.getScanMode() !=
               BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+            // TODO: Note that enabling discovery also enables bluetooth, we shouldn't have any need to do both. 
               Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-              discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+              discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300); // TODO: A value of 0 here will enable discovery indefinetly.
+                                                                                              // How do we turn it off?
               startActivityForResult(discoverableIntent, REQUEST_DISCOVERABLE);
           }
           else{
