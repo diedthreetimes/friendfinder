@@ -40,6 +40,7 @@ import android.widget.Toast;
 import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
+import com.sprout.finderlib.communication.Device;
 import com.sprout.finderlib.communication.WifiService;
 import com.sprout.finderlib.ui.communication.DeviceList;
 import com.sprout.friendfinder.R;
@@ -186,6 +187,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
           // If BT is not on, request that it be enabled.
           // setupChat() will then be called during onActivityResult
           
+          // TODO: We can combine enabeling the adapter, and requesting discovery by simply only requesting discoverable mode
           if (!mBluetoothAdapter.isEnabled()) {          
               // Enable the bluetooth adapter
               Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -292,6 +294,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
        * (non-Javadoc)
        * @see android.app.Activity#onCreateOptionsMenu(android.view.Menu)
        */
+      @Override
       public boolean onCreateOptionsMenu(Menu menu) {
     	  MenuInflater inflater = getMenuInflater();
     	  inflater.inflate(R.menu.menubar, menu);
@@ -302,7 +305,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
        * (non-Javadoc)
        * @see android.app.Activity#onOptionsItemSelected(android.view.MenuItem)
        */
-      
+      @Override
       public boolean onOptionsItemSelected(MenuItem item) {
     	  switch (item.getItemId()) {
     	  case R.id.account:
@@ -352,13 +355,12 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
               BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
             // TODO: Note that enabling discovery also enables bluetooth, we shouldn't have any need to do both. 
               Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-              discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300); // TODO: A value of 0 here will enable discovery indefinetly.
-                                                                                              // How do we turn it off?
+              discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0); // A value of 0 turns discoverability on forever.
+              // In the future if we would like to turn off discovery we can repeat this request with a value of 1
               startActivityForResult(discoverableIntent, REQUEST_DISCOVERABLE);
           }
           else{
-        	// Launch the DeviceListActivity to see devices and do scan
-        	launchDeviceList();
+            doPostDiscoverable();
           }
       }
       
@@ -418,9 +420,14 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
                   	target.finishActivity( REQUEST_CONNECT_DEVICE );
                       
                   	//setStatus(getString(R.string.title_connected_to, mConnectedDeviceName));
-           	
                   	//if(connectionIndicator != null) connectionIndicator.dismiss();
-                  	//TODO: Start the protocol here
+                  	
+                  	target.mMessageService.stopDiscovery();        
+                  	
+                  	Log.i(TAG, "Device connected, attempting to check for common friends");
+                  	target.checkCommonFriends();
+                  	
+                  	
                   	
                   	
                   	
@@ -439,7 +446,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
                   // construct a string from the valid bytes in the buffer        
                   String readMessage = new String(readBuf, 0, msg.arg1);
 
-                  
+                  Log.i(TAG, "Read message " + readMessage);
 
                   //user pressed send button (for test purposes only)
                    Toast.makeText(target.getApplicationContext(), "Message read " 
@@ -635,7 +642,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
           		// for now we do nothing
           	}
           		
-          	launchDeviceList();
+          	doPostDiscoverable();
           	break;
           }
       }
@@ -654,6 +661,48 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
         
           // Attempt to connect to the device
           mMessageService.connect(address, secure);
+      }
+      
+      /**
+       * Called after discovery is enabled. 
+       */
+      private void doPostDiscoverable() {
+        searchForPeers();
+      }
+      
+      
+      // The Comm Callback.
+      private CommunicationService.Callback mDiscoveryCallback = new CommunicationService.Callback(){
+
+        @Override
+        public void onPeerDiscovered(Device peer) { 
+          Log.i(TAG, "Device: " + peer.getName() + " found, (But not verified)");
+        } // We don't use this function, since these devices may not be part of our app   
+
+        @Override
+        public void onDiscoveryComplete(boolean success){
+          if(!success)
+            Log.e(TAG, "Discovery failed!");
+          else
+            Log.i(TAG, "Discovery completed");
+        }
+        
+        @Override
+        public void onDiscoveryStarted(){
+          Log.i(TAG, "Discovery started");
+        }
+        
+        @Override
+        public void onServiceDiscovered(Device peer) {
+          // TODO: We want to do this one at a time, we should have a Thread that pulls devices from a queue.
+          Log.i(TAG, "Service discovered! Attepting to connect to " + peer.getName());
+          mMessageService.connect(peer, false);
+          
+          // Once connected, the test happens automatically since it is processed in the handler. We can adjust this behaviour by turning the readLoop off. 
+        }
+      };
+      private void searchForPeers() {
+        mMessageService.discoverPeers(mDiscoveryCallback);
       }
       
       /**
