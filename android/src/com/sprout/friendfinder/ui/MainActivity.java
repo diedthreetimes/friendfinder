@@ -272,7 +272,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
   }
 
   @Override
-  public void onStop() {// Name of the connected device
+  public void onStop() {
     super.onStop();
     if(D) Log.e(TAG, "-- ON STOP --");
   }
@@ -280,7 +280,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
   @Override
   public void onDestroy() {
     super.onDestroy();
-
+    
     if(D) Log.e(TAG, "--- ON DESTROY ---");
 
     if (mMessageService != null) {
