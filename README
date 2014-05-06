@@ -5,3 +5,10 @@ $ git clone https://#{your-user-name-here}@zeus.ics.uci.edu/git/finderlib.git
 
 
 Add this library along with the android app to your eclipse workspace.
+
+This project also relies on a branch of SocailAuth from Android. In particular we branch from:
+
+URL: http://socialauth-android.googlecode.com/svn/trunk/socialauth-android
+Repository Root: http://socialauth-android.googlecode.com/svn
+Repository UUID: 7a853004-a21d-2956-7251-024617a12917
+Revision: 514

@@ -45,7 +45,7 @@ public final class SocialContactListener implements SocialAuthListener<List<Cont
 	private final String TAG = SocialContactListener.class.getSimpleName();
 	private final boolean D = true;
 	
-private Context mActivity;
+  private Context mActivity;
 	
 	public SocialContactListener(Context act) {
 		mActivity = act;
@@ -58,13 +58,9 @@ private Context mActivity;
 	  
 		
 	}
-	
-	
-	
-
 
 	@Override
-	public void onExecute(List<Contact> contactList) {
+	public void onExecute(String provider, List<Contact> contactList) {
 		// TODO: contactList could be null here
 	  
 		Log.d(TAG, "callback happened");
@@ -314,6 +310,8 @@ protected BigInteger randomRange(BigInteger range){
 	return temp;
 	
 }
+
+
 	
 	
 }
