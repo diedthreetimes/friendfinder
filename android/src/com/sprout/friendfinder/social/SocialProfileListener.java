@@ -36,6 +36,8 @@ public final class SocialProfileListener implements SocialAuthListener<org.brick
 
 	@Override
 	public void onExecute(org.brickred.socialauth.Profile profile) {
+	  // TODO: profile could be null here!
+	  
 		Log.d(TAG, "callback happened");
 		
 		Log.d(TAG, "Your profile: \n");

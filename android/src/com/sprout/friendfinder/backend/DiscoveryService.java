@@ -39,6 +39,12 @@ import com.sprout.friendfinder.social.SocialContactListener;
 import com.sprout.friendfinder.social.SocialProfileListener;
 import com.sprout.friendfinder.ui.CommonFriendsDialogFragment;
 
+
+// TODO: General
+//   Add a stop action
+//   Add way to stop the service from the activity.
+
+
 public class DiscoveryService extends Service {
   /***************************/
   /* *** Debug Flags     *** */
@@ -120,11 +126,18 @@ public class DiscoveryService extends Service {
       return START_REDELIVER_INTENT;
     }
 
+    // As of now we only have one action, so we simply always just perform the START logic
     login();
 
-    //TODO: If we are not already synchronized (or are out of date). Synchronize 
+    
+    //TODO: If we are not already synchronized (or are out of date).
+    // sync();
     // Otherwise move directly to the init state
     // initialize();
+    
+    // For now, we always sync
+    // TODO: Do we need to wait for login to be successful?
+    sync();
 
     // This is useful to ensure that our service stays alive. 
     return START_REDELIVER_INTENT;
@@ -207,6 +220,8 @@ public class DiscoveryService extends Service {
         // set token. If auth error occurs must call invalidateAuthToken
       } 
       */
+    
+    if (D) Log.i(TAG, "Login called, about to authorize");
     adapter.authorize(this, Provider.LINKEDIN);
   }
 
@@ -215,7 +230,7 @@ public class DiscoveryService extends Service {
     // otherwise we get an error
 
 
-    if(D) Log.d(TAG, "Loggingout from socialauth");
+    if(D) Log.i(TAG, "Loggingout from socialauth");
     try {
       // TODO: Does this actually log you out. It appears like it does not
       adapter.signOut(Provider.LINKEDIN.name());    
@@ -235,7 +250,8 @@ public class DiscoveryService extends Service {
     adapter.getUserProfileAsync(new SocialProfileListener(this));
   }
 
-  // TODO: Rewrite
+  // TODO: Rewrite. For now we don't worry about this, as we will need to rewrite a lot of it to interface with the server anyways.
+  // We also have a bit more freedom in the service, to do things in the main thread. Although, this is still usually advisable not to do
   private void downloadContacts() {
     try {
       adapter.getContactListAsync(new SocialContactListener(this)); 
@@ -351,6 +367,7 @@ public class DiscoveryService extends Service {
   
   // TODO: This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
+    if(D) Log.i(TAG, "Searching for peers");
     mMessageService.discoverPeers(mDiscoveryCallback);
   }
 
@@ -375,6 +392,7 @@ public class DiscoveryService extends Service {
   private void sync() {
     setState(STATE_SYNC);
 
+    // TODO: These should accept some form of on complete callback
     downloadProfile();
     downloadContacts();
     downloadAuthorization();
@@ -386,6 +404,9 @@ public class DiscoveryService extends Service {
     Long time = ts.getTime();
     editor.putLong("lastSync", time);
     editor.commit();
+    
+    // TODO: This should only be called once the sync is complete
+    initialize();
   }
 
   // Inititalize the com service
@@ -415,7 +436,12 @@ public class DiscoveryService extends Service {
 
     mMessageService.start(false);
 
-    // Once we are in the ready state we need to start the timers
+    //TODO: Once we are in the ready state we need to start the timers periodiclaly calling discovery looking for connections
+    
+    // Once we leave the ready state we need to make sure to stop these timers
+    
+    // For now, we just enter discovery
+    searchForPeers();
   }
 
   private void run() {
@@ -427,20 +453,27 @@ public class DiscoveryService extends Service {
     }
 
     // While in the run state we should do the following.
-    // Periodically run discovery.
-    // Process all peers that where discovered.
-
-    // This is the code for performing a single connection
-    //mMessageService.stopDiscovery();        
-    //Log.i(TAG, "Device connected, attempting to check for common friends");
-    //checkCommonFriends();
+    // Connect to a single peer that was discovered, and run the protocol with that peer
 
     loadProfileFromFile(); //need to get our own profile information first
     loadContactsFromFile(); 
+    
+    // This is the code for performing a single connection
+    mMessageService.stopDiscovery();        
+    Log.i(TAG, "Device connected, attempting to check for common friends");
+    checkCommonFriends();
+    
+    // After words, we should re-enter the run state if we have more things to process. Otherwise we should enter the ready state.
+
+    // For now, since we only handle a single connection, we just enter the ready state
+    ready();
+    
   }
 
   private void onDisabled() {
     setState(STATE_DISABLED);
+    
+    // TODO: Stop all communications
   }
 
   /***************************/
@@ -501,9 +534,8 @@ public class DiscoveryService extends Service {
           // TODO: Eventually, we need a way to toggle what test gets run.
           // For now we just checkCommonFriends
 
-          target.mMessageService.stopDiscovery();
-          target.checkCommonFriends();
-
+          target.run();
+      
           break;
         case CommunicationService.STATE_CONNECTING:
           //setStatus(R.string.title_connecting);
@@ -541,13 +573,16 @@ public class DiscoveryService extends Service {
       case CommunicationService.MESSAGE_FAILED:
         // When a message fails we assume we need to reset
 
+        // TODO: Perform the reset (remove the peer, etc)
         break;
       case CommunicationService.MESSAGE_DISABLED:
         target.onDisabled();
         break;
       case CommunicationService.MESSAGE_ENABLED:
-        // if state is disabled 
-
+        //TODO: if state is not stop (should be disabled) 
+        // enter ready
+        // else 
+        // do nothing
         break;
 
       }

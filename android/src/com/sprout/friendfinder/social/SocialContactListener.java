@@ -54,14 +54,19 @@ private Context mActivity;
 	@Override
 	public void onError(SocialAuthError arg0) {
 		// TODO Auto-generated method stub
+	  
+	  
 		
 	}
+	
+	
 	
 
 
 	@Override
 	public void onExecute(List<Contact> contactList) {
-		
+		// TODO: contactList could be null here
+	  
 		Log.d(TAG, "callback happened");
 		Log.d(TAG, "Number of Contacts: " + contactList.size());
 		
