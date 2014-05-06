@@ -5,22 +5,14 @@
 
 package com.sprout.friendfinder.social;
 
-import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.util.List;
 
-import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.android.SocialAuthListener;
 
-import android.app.Activity;
 import android.content.Context;
-import android.provider.ContactsContract.Profile;
 import android.util.Log;
-import android.widget.Toast;
 
 
 
@@ -28,9 +20,9 @@ public final class SocialProfileListener implements SocialAuthListener<org.brick
 
 	private static final String TAG = SocialProfileListener.class.getSimpleName();
 	
-	private Activity mActivity;
+	private Context mActivity;
 	
-	public SocialProfileListener(Activity act) {
+	public SocialProfileListener(Context act) {
 		mActivity = act;
 	}
 	

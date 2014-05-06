@@ -36,13 +36,14 @@
         android:layout_y="16dp"
         android:text="First connect to another device" />
 
+    <!--
     <Button
         android:id="@+id/connect_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_x="110dp"
         android:layout_y="46dp"
-        android:text="Connect" />
+        android:text="Connect" /> -->
 
     <TextView
         android:id="@+id/textView2"
@@ -52,12 +53,13 @@
         android:layout_y="119dp"
         android:text="Once connected, start searching for contacts in common" />
 
+    <!-- 
     <Button
         android:id="@+id/check_common_friends_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_x="119dp"
         android:layout_y="171dp"
-        android:text="START" />
+        android:text="START" /> -->
 
 </AbsoluteLayout>

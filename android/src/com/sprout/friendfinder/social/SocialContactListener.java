@@ -45,9 +45,9 @@ public final class SocialContactListener implements SocialAuthListener<List<Cont
 	private final String TAG = SocialContactListener.class.getSimpleName();
 	private final boolean D = true;
 	
-private Activity mActivity;
+private Context mActivity;
 	
-	public SocialContactListener(Activity act) {
+	public SocialContactListener(Context act) {
 		mActivity = act;
 	}
 	
@@ -136,7 +136,7 @@ private Activity mActivity;
 			
 			int statusCode = response.getStatusLine().getStatusCode();
 			Log.d(TAG, "Status Code CA: " + statusCode);
-			HttpEntity entity = response.getEntity();
+			HttpEntity entity = response.getEntity();Service
 			serverInput = entity.getContent();
 			Log.d(TAG, "Connected to CA");
 			
