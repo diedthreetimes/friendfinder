@@ -36,7 +36,16 @@ public class SocialAuthError extends Throwable {
 
 	private static final long serialVersionUID = 1L;
 	private final Exception innerException;
+	
+	private static boolean D = false;
 
+	
+	public SocialAuthError(String message) {
+	  super(message);
+	  
+	  this.innerException = null;
+	}
+	
 	/**
 	 * Constructor
 	 * 
@@ -48,7 +57,7 @@ public class SocialAuthError extends Throwable {
 	public SocialAuthError(String message, Exception e) {
 		super(message);
 		this.innerException = e;
-		Log.d("SocialAuthError", e.toString());
+		if(D) Log.d("SocialAuthError", e.toString());
 	}
 
 	/**

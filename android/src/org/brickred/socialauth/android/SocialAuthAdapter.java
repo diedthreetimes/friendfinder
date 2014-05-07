@@ -384,7 +384,19 @@ public class SocialAuthAdapter {
 			return;
 		}
 	}
-
+	
+	boolean loginViaWebView = true;
+	
+	/**
+	 * Authorize if token is available. Otherwise throws an exception across the listner.
+	 */
+	public void authorizeIfAvailable(Context ctx, Provider provider) {
+	  loginViaWebView = false;
+	  
+	  authorize(ctx, provider);
+	  loginViaWebView = true;
+	}
+	
 	/**
 	 * Method to handle configuration , Use directly for CustomUI
 	 * 
@@ -393,8 +405,8 @@ public class SocialAuthAdapter {
 	 * @param provider
 	 *            name of provider
 	 */
-
 	public void authorize(Context ctx, Provider provider) {
+	  
 		if (!Util.isNetworkAvailable(ctx)) {
 			dialogListener.onError(new SocialAuthError("Please check your Internet connection", new Exception("")));
 			return;
@@ -433,6 +445,61 @@ public class SocialAuthAdapter {
 			}
 			connectProvider(ctx, provider);
 		}
+	}
+	
+	/**
+	 * Retrieve the token attached to a provider
+	 * @param provider
+	 * @author SkyF
+	 * @return Secret token used for this provider
+	 */
+	public String getToken(Provider provider) {
+	  AccessGrant grant = getAccessGrant(provider);
+	  if (grant == null) 
+	    return null;
+	  
+	  return grant.getSecret();
+	}
+	
+	/**
+	 * Retreive the access grant attached to a provider
+	 * @param provider
+	 * @author SkyF
+	 * @return
+	 */
+	public AccessGrant getAccessGrant(Provider provider) {
+      HashMap<String, Object> attrMap = new HashMap<String, Object>();
+
+      if (tokenMap == null)
+        return null;
+      
+      String key = (String) tokenMap.get(provider.toString() + " key");
+
+      String secret = (String) tokenMap.get(provider.toString() + " secret");
+
+      String providerid = (String) tokenMap.get(provider.toString() + " providerid");
+      
+      if( key == null || secret == null || providerid == null)
+        return null;
+
+      String temp = provider.toString() + "attribute";
+      for (String attr : tokenMap.keySet()) {
+        if (attr.startsWith(temp)) {
+          int startLocation = attr.indexOf(temp) + temp.length() + 1;
+          attrMap.put(attr.substring(startLocation), tokenMap.get(attr));
+        }
+
+      }
+
+      for (Map.Entry<String, Object> entry : attrMap.entrySet()) {
+        System.out.println(entry.getKey() + ", " + entry.getValue());
+      }
+
+      AccessGrant accessGrant = new AccessGrant(key, secret);
+      accessGrant.setProviderId(providerid);
+      accessGrant.setAttributes(attrMap);
+      
+      return accessGrant;
 	}
 
 	/**
@@ -505,6 +572,12 @@ public class SocialAuthAdapter {
 	 * 
 	 */
 	private void startDialogAuth(final Context context, final Provider provider) {
+	  
+	  if (!loginViaWebView) {
+	    dialogListener.onError(new SocialAuthError("No tokens saved, and webview disabled", new LoginError("No tokens saved")));
+	    return; 
+	  }
+	  
 		CookieSyncManager.createInstance(context);
 
 		Runnable runnable = new Runnable() {
@@ -632,7 +705,10 @@ public class SocialAuthAdapter {
 		// If Access Token is not available , Open Authentication Dialog
 		else {
 			Log.d("SocialAuthAdapter", "Starting webview for authentication");
-			startDialogAuth(ctx, currentProvider);
+			
+
+      startDialogAuth(ctx, currentProvider);
+
 		}
 
 	}

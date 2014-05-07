@@ -1,6 +1,7 @@
 package com.sprout.friendfinder.backend;
 
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
 import java.sql.Timestamp;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import org.brickred.socialauth.android.DialogListener;
+import org.brickred.socialauth.android.LoginError;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
@@ -16,6 +18,7 @@ import org.brickred.socialauth.android.SocialAuthError;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -32,17 +35,14 @@ import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
-import com.sprout.friendfinder.social.ContactDownloader;
 import com.sprout.friendfinder.social.ContactsListObject;
 import com.sprout.friendfinder.social.ProfileObject;
-import com.sprout.friendfinder.social.SocialContactListener;
-import com.sprout.friendfinder.social.SocialProfileListener;
-import com.sprout.friendfinder.ui.CommonFriendsDialogFragment;
+import com.sprout.friendfinder.ui.LoginActivity;
 
 
 // TODO: General
-//   Add a stop action
-//   Add way to stop the service from the activity.
+//    Monitor INTERNET access state.
+//    Schedule sync events if Internet is not available (or just for periodic updates)
 
 
 public class DiscoveryService extends Service {
@@ -59,6 +59,9 @@ public class DiscoveryService extends Service {
   /* *** Intent Actions  *** */
   /***************************/
   public static final String ACTION_START = "action_start";
+  public static final String ACTION_STOP = "action_stop";
+  public static final String ACTION_SYNC = "action_sync";
+  public static final String ACTION_LOGOUT = "action_start";
 
   /***************************/
   /* ***    STATES       *** */
@@ -121,23 +124,16 @@ public class DiscoveryService extends Service {
   public int onStartCommand(Intent intent, int flags, int startId) {
     if(L) Log.i(TAG, "Received start id " + startId + ": " + intent);
 
-    if (intent == null || intent.getAction() == null) {
-      Log.e(TAG, "Unexpected null intent recieved");
-      return START_REDELIVER_INTENT;
+    // We assume that any system restarts, are equivelent to an ACTION_START
+    if (intent == null || intent.getAction() == null || intent.getAction().equals(ACTION_START)) {
+      login();
+    } else if (intent.getAction().equals(ACTION_STOP)) {
+      stop();
+    } else if (intent.getAction().equals(ACTION_SYNC)) {
+      sync();
+    } else if (intent.getAction().equals(ACTION_LOGOUT)) {
+      logout();
     }
-
-    // As of now we only have one action, so we simply always just perform the START logic
-    login();
-
-    
-    //TODO: If we are not already synchronized (or are out of date).
-    // sync();
-    // Otherwise move directly to the init state
-    // initialize();
-    
-    // For now, we always sync
-    // TODO: Do we need to wait for login to be successful?
-    sync();
 
     // This is useful to ensure that our service stays alive. 
     return START_REDELIVER_INTENT;
@@ -153,25 +149,40 @@ public class DiscoveryService extends Service {
       @Override
       public void onComplete(Bundle values) {
         if(D) Log.d(TAG, "Authorization successful");
-        //Here we now have a provider
+        if(D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.LINKEDIN));
+        
+        DiscoveryService.this.initialize();
       }
 
+      // TODO: We need to display something useful to users in these failure cases
       @Override
       public void onCancel() {
         if(D) Log.d(TAG, "Cancel called");
 
-
+        DiscoveryService.this.stop();
       }     
 
       @Override
       public void onError(SocialAuthError er) {
         if(D) Log.d(TAG, "Error", er);
+        
+        if (er.getInnerException() instanceof LoginError){
+          if(D) Log.i(TAG, "Starting Login Activity");
+          //TODO: Display a notification instead of starting the activity directly
+          
+          Intent intent = new Intent(DiscoveryService.this, LoginActivity.class);
+          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          startActivity(intent);
+        }
 
+        DiscoveryService.this.stop();
       }
 
       @Override
       public void onBack(){
         if(D) Log.d(TAG, "BACK");
+        
+        DiscoveryService.this.stop();
       }
     });
 
@@ -192,7 +203,7 @@ public class DiscoveryService extends Service {
           Log.d(TAG, "Account: " + account.toString());
         }
 
-        // TODO: Prompt user to select an account, and remember decision. (but make sure remembered account is still present)
+        // Prompt user to select an account, and remember decision. (but make sure remembered account is still present)
         Account selected = accounts[0];
 
         //accountManager.getAuthToken(selected, selected.type, null, this, new AccountManagerCallback<Bundle>() {
@@ -222,7 +233,11 @@ public class DiscoveryService extends Service {
       */
     
     if (D) Log.i(TAG, "Login called, about to authorize");
-    adapter.authorize(this, Provider.LINKEDIN);
+    adapter.authorizeIfAvailable(this, Provider.LINKEDIN);
+    
+    // After we call authorize, callbacks are passed in the DialogListner passed when the adapter is intitialized
+    
+    if (D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.LINKEDIN));
   }
 
   private void logout() {
@@ -240,37 +255,60 @@ public class DiscoveryService extends Service {
 
     // TODO: We need to also delete saved information her
   }
+  
+  ProfileObject mProfile;
+  List<ProfileObject> mContactList;
 
-  // TODO: I'm not a huge fan of these variables do we need them here?
-  ProfileObject myProfile;
-  List<ProfileObject> contactList;
+  // TODO: Rename donwloadAll
+  private void downloadAll(final ProfileDownloadCallback callback) {
+    new AsyncTask<Void, Void, Boolean>() {
 
-  // TODO: Eventually merge download contacts and download profile
-  private void downloadProfile() {
-    adapter.getUserProfileAsync(new SocialProfileListener(this));
+      @Override
+      protected Boolean doInBackground(Void... params) {
+        // Download the profile
+        try {
+          new ProfileObject(adapter.getUserProfile()).save(DiscoveryService.this);
+        
+        
+          ContactsListObject clist = new ContactsListObject(adapter.getContactList());
+          clist.save(DiscoveryService.this);
+          clist.saveAuthorization(DiscoveryService.this);
+          
+          // Download Authorization
+          // TODO:
+          
+        } catch (NullPointerException e) {
+          Log.e(TAG, "Download failed.", e);
+          return false;
+        }
+        catch (IOException e) {
+          return false;
+        }
+        
+        
+      
+        return true;
+      }
+      
+      @Override
+      protected void onPostExecute(Boolean success) {
+        if (!success)
+          callback.onError();
+        else {
+          callback.onComplete();
+        }
+      }
+      
+ 
+      
+    }.execute();
+    
   }
 
-  // TODO: Rewrite. For now we don't worry about this, as we will need to rewrite a lot of it to interface with the server anyways.
-  // We also have a bit more freedom in the service, to do things in the main thread. Although, this is still usually advisable not to do
-  private void downloadContacts() {
-    try {
-      adapter.getContactListAsync(new SocialContactListener(this)); 
-    } catch (Exception e) {
-      Log.d(TAG, e.getMessage());
-    }
-
-    // TODO: At the moment this does nothing
-    //new ContactDownloader().execute();
-  }
-
-  private void downloadAuthorization() {
-    // TODO: How is the authorization downloaded? 
-  }
-
-  public void loadProfileFromFile() {  
+  public ProfileObject loadProfileFromFile() {  
     //load it into object that can be used later on
 
-    myProfile = new ProfileObject();
+    ProfileObject myProfile = new ProfileObject();
 
     String filename = "profile";
 
@@ -284,19 +322,20 @@ public class DiscoveryService extends Service {
       objectInput.close();
       Log.d(TAG, "Profile loaded");
       Log.d(TAG, "Name: " + myProfile.getFirstName() + " " + myProfile.getLastName());
-      //Toast.makeText(this, "Your offline profile is: " + myProfile.getFirstName() + " " + myProfile.getLastName(), Toast.LENGTH_SHORT).show();
+      
+      return myProfile;
     } catch (Exception e) {
-      Log.d(TAG, "File has not been downloaded so far");
-      Toast.makeText(this, "You need to download your profile first", Toast.LENGTH_SHORT).show();
+      Log.d(TAG, "File has not been downloaded yet");
+      
+      return null;
     }
-
   } 
 
-  // TODO: It would be nice to encorporate load and donwload some how...
-  public void loadContactsFromFile() {
+  public List<ProfileObject> loadContactsFromFile() {
     //load it into object that can be used later on
 
     ContactsListObject contactListObject = new ContactsListObject();
+    List<ProfileObject> contactList = null;
 
     String filename = "contacts";
 
@@ -310,11 +349,14 @@ public class DiscoveryService extends Service {
       contactList = contactListObject.getContactList();
       objectInput.close();
       Log.d(TAG, "Contacts loaded");
+      
+      return contactList;
 
       //Toast.makeText(this, "Your " + contactList.size() + " offline contacts have been loaded", Toast.LENGTH_SHORT).show();
     } catch (Exception e) {
       Log.d(TAG, "File has not been downloaded so far");
-      Toast.makeText(this, "You need to download your contacts first", Toast.LENGTH_SHORT).show();
+      
+      return null;
     }
   }
 
@@ -339,12 +381,11 @@ public class DiscoveryService extends Service {
       return null;
     }
   }
+  
 
   // Operations on the profile
-  private void checkCommonFriends() {
+  private void checkCommonFriends(List<ProfileObject> contactList, AuthorizationObject authobj) {
     //assume established communication channel with peer 
-
-    AuthorizationObject authobj = loadAuthorizationFromFile();
 
     if (authobj == null || contactList == null) {
       Log.i(TAG, "Authorization or contactList not loaded, aborting test");  
@@ -365,7 +406,7 @@ public class DiscoveryService extends Service {
   /* ** Utility Functions  *** */
   /*****************************/
   
-  // TODO: This may not belong as it's own function. Instead, we should simply do this in a timer.
+  // This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
     if(D) Log.i(TAG, "Searching for peers");
     mMessageService.discoverPeers(mDiscoveryCallback);
@@ -375,8 +416,28 @@ public class DiscoveryService extends Service {
   /* ** State Transitions  *** */
   /*****************************/
 
+  private String stateString(int state) {
+    // This is a bit strange
+    switch (state) {
+    case STATE_STOP:
+      return "STOP";
+    case STATE_SYNC:
+      return "SYNC";
+    case STATE_INIT:
+      return "INIT";
+    case STATE_READY:
+      return "READY";
+    case STATE_RUNNING:
+      return "RUNNING";
+    case STATE_DISABLED:
+      return "DISABLED";
+    default:
+      return String.valueOf(state);       
+    }
+  }
+  
   private void setState(int state) {
-    if (D) Log.d(TAG, "setState() " + mState + " -> " + state);
+    if (D) Log.d(TAG, "setState() " + stateString(mState) + " -> " + stateString(state));
     mState = state;
   }
 
@@ -392,38 +453,68 @@ public class DiscoveryService extends Service {
   private void sync() {
     setState(STATE_SYNC);
 
-    // TODO: These should accept some form of on complete callback
-    downloadProfile();
-    downloadContacts();
-    downloadAuthorization();
-
-    // Record the current time of sync;
-    SharedPreferences sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
-    SharedPreferences.Editor editor = sharedPreference.edit();
-    Timestamp ts = new Timestamp(System.currentTimeMillis());
-    Long time = ts.getTime();
-    editor.putLong("lastSync", time);
-    editor.commit();
+    // TODO: We need stop all communications for sync to happen.
     
-    // TODO: This should only be called once the sync is complete
-    initialize();
+    
+    downloadAll(new ProfileDownloadCallback () {
+      @Override
+      public void onComplete() {
+        // Record the current time of sync;
+        SharedPreferences sharedPreference = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+        SharedPreferences.Editor editor = sharedPreference.edit();
+        Timestamp ts = new Timestamp(System.currentTimeMillis());
+        Long time = ts.getTime();
+        editor.putLong("lastSync", time);
+        editor.commit();
+        
+        initialize();
+      }
+      
+      @Override
+      public void onError() {
+        Log.e(TAG, "Unable to download profile. Perhpas internet is not avaialable");
+        // TODO: we need to schedule a sync for a later date, since this one was not successful.
+        
+        // This is redundant work, but hopefully it wont happen very often.
+        if( loadContactsFromFile() == null ||  loadAuthorizationFromFile() == null || loadProfileFromFile() == null) {
+          // We definetly need to reschedule the sync in this case. 
+          Log.i(TAG, "No preloaded data available, stopping");
+          stop();
+        } else {
+          initialize();
+        }
+      }
+    });
+    
   }
 
   // Inititalize the com service
   private void initialize() {
     setState(STATE_INIT);   
 
-    if(benchmarkBandwidth){
-      mMessageService = new BluetoothServiceLogger(this, new mHandler(DiscoveryService.this));
-    }else {
-      mMessageService =  new BluetoothService(this, new mHandler(DiscoveryService.this));
+    mContactList = loadContactsFromFile();
+    mProfile = loadProfileFromFile();
+    
+    if (mContactList == null || mProfile == null) {
+      Log.i(TAG, "No profile or contact information.");
+      
+      sync(); 
+      return;
+    }
+    
+    if (mMessageService == null) {
+      if(benchmarkBandwidth){
+        mMessageService = new BluetoothServiceLogger(this, new mHandler(DiscoveryService.this));
+      }else {
+        mMessageService =  new BluetoothService(this, new mHandler(DiscoveryService.this));
+      }
     }
 
-    // TODO: Add ability to query this from the messageService
-    // if bluetooth is enabled
-    ready();
-    // Else
-    // onDisabled();
+    if (mMessageService.isEnabled()){ 
+      ready();
+    } else {
+      onDisabled();
+    }
   }
 
   private void ready() {
@@ -455,13 +546,23 @@ public class DiscoveryService extends Service {
     // While in the run state we should do the following.
     // Connect to a single peer that was discovered, and run the protocol with that peer
 
-    loadProfileFromFile(); //need to get our own profile information first
-    loadContactsFromFile(); 
+    if (mProfile == null)
+      mProfile = loadProfileFromFile();
+    if (mContactList == null)
+      mContactList = loadContactsFromFile(); 
+    
+    AuthorizationObject authobj = loadAuthorizationFromFile();
+    
+    if (mProfile == null || mContactList == null || authobj == null) {
+      Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
+      
+      sync();
+    }
     
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
     Log.i(TAG, "Device connected, attempting to check for common friends");
-    checkCommonFriends();
+    checkCommonFriends(mContactList, authobj);
     
     // After words, we should re-enter the run state if we have more things to process. Otherwise we should enter the ready state.
 
@@ -473,7 +574,7 @@ public class DiscoveryService extends Service {
   private void onDisabled() {
     setState(STATE_DISABLED);
     
-    // TODO: Stop all communications
+    // TODO: Stop all communication attempts. (but be sure not to disable notification about enabled)
   }
 
   /***************************/
@@ -564,7 +665,7 @@ public class DiscoveryService extends Service {
 
       case CommunicationService.MESSAGE_DEVICE_NAME:
         // If desired we can get the device name as
-        // = msg.getData().getString(CommunicationService.DEVICE_NAME);            
+        // msg.getData().getString(CommunicationService.DEVICE_NAME);
         break;            
       case CommunicationService.MESSAGE_TOAST:
         Toast.makeText(target.getApplicationContext(), msg.getData().getString(CommunicationService.TOAST),
@@ -572,17 +673,19 @@ public class DiscoveryService extends Service {
         break;
       case CommunicationService.MESSAGE_FAILED:
         // When a message fails we assume we need to reset
+        
+        Log.e(TAG, "Message failed");
 
-        // TODO: Perform the reset (remove the peer, etc)
+        // TODO: Perform a reset (remove the peer, etc)
         break;
       case CommunicationService.MESSAGE_DISABLED:
         target.onDisabled();
         break;
       case CommunicationService.MESSAGE_ENABLED:
-        //TODO: if state is not stop (should be disabled) 
-        // enter ready
-        // else 
-        // do nothing
+        // The state should be disabled. But this may not be the case
+        if (target.mState != STATE_STOP) {
+          target.initialize();
+        }
         break;
 
       }
@@ -617,7 +720,7 @@ public class DiscoveryService extends Service {
 
         // TODO: This is a strange place to do this, it would make more sense wrapped in a contact list object.
         HashMap<String, String> idToNameMap = new HashMap<String, String>();
-        for (ProfileObject prof : contactList) {
+        for (ProfileObject prof : mContactList) {
           idToNameMap.put( prof.getId(), prof.getDisplayName());
         }
 
@@ -633,6 +736,18 @@ public class DiscoveryService extends Service {
          */
       }
 
+    }
+    
+    /*****************************/
+    /* ***  Custom Callbacks *** */
+    /*****************************/
+    
+    /**
+     * This callback monitors asynchronous social interactions. i.e. downloading
+     */
+    interface ProfileDownloadCallback {
+      public void onComplete();
+      public void onError();
     }
 
 }

@@ -36,6 +36,7 @@
         </activity>
         
         <activity android:name="com.sprout.finderlib.ui.communication.DeviceList" />
+        <activity android:name="com.sprout.friendfinder.ui.LoginActivity" />
         
         <service
             android:name="com.sprout.friendfinder.backend.DiscoveryService"

@@ -6,9 +6,16 @@
 
 package com.sprout.friendfinder.social;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
+
+import org.brickred.socialauth.Profile;
+
+import android.content.Context;
+import android.util.Log;
 
 public class ProfileObject implements Serializable {
 	
@@ -20,8 +27,16 @@ public class ProfileObject implements Serializable {
 	private String lastName; 
 	private String id;
 	
+	private static final String filename = "profile";
+	
 	public ProfileObject() {
 		
+	}
+	
+	public ProfileObject(Profile profile) {
+    this.firstName = profile.getFirstName();
+    this.lastName = profile.getLastName();
+    this.id = profile.getValidatedId();
 	}
 	
 	public ProfileObject(String firstName, String lastName, String id) {
@@ -40,6 +55,18 @@ public class ProfileObject implements Serializable {
 	
 	public String getId() {
 		return this.id;
+	}
+	
+	public void save(Context context) throws IOException {
+	  String filename = "profile";
+    
+    FileOutputStream fileOutput;
+    ObjectOutputStream objectOutput; 
+    
+    fileOutput = context.openFileOutput(filename, Context.MODE_PRIVATE);
+    objectOutput = new ObjectOutputStream(fileOutput);
+    writeObject(objectOutput);
+    objectOutput.close();
 	}
 	
 	public void writeObject(java.io.ObjectOutputStream out)
