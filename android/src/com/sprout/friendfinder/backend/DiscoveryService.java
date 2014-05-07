@@ -43,6 +43,7 @@ import com.sprout.friendfinder.ui.LoginActivity;
 // TODO: General
 //    Monitor INTERNET access state.
 //    Schedule sync events if Internet is not available (or just for periodic updates)
+//    Add timer for discovery
 
 
 public class DiscoveryService extends Service {
@@ -109,8 +110,7 @@ public class DiscoveryService extends Service {
     if(L) Log.i(TAG, "Service created");
 
     setState(STATE_STOP);
-
-    initSocialAdapter();
+    
   }
 
   @Override
@@ -126,7 +126,9 @@ public class DiscoveryService extends Service {
 
     // We assume that any system restarts, are equivelent to an ACTION_START
     if (intent == null || intent.getAction() == null || intent.getAction().equals(ACTION_START)) {
-      login();
+      // If we are not in the stop state we should probably just do nothing, we've already been started
+      //  For debug purposes, we simply restart ourselves
+      initialize();
     } else if (intent.getAction().equals(ACTION_STOP)) {
       stop();
     } else if (intent.getAction().equals(ACTION_SYNC)) {
@@ -143,51 +145,7 @@ public class DiscoveryService extends Service {
   /* ** Profile Functions  *** */
   /*****************************/
 
-  private SocialAuthAdapter adapter;
-  private void initSocialAdapter() {
-    adapter = new SocialAuthAdapter(new DialogListener() {
-      @Override
-      public void onComplete(Bundle values) {
-        if(D) Log.d(TAG, "Authorization successful");
-        if(D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.LINKEDIN));
-        
-        DiscoveryService.this.initialize();
-      }
-
-      // TODO: We need to display something useful to users in these failure cases
-      @Override
-      public void onCancel() {
-        if(D) Log.d(TAG, "Cancel called");
-
-        DiscoveryService.this.stop();
-      }     
-
-      @Override
-      public void onError(SocialAuthError er) {
-        if(D) Log.d(TAG, "Error", er);
-        
-        if (er.getInnerException() instanceof LoginError){
-          if(D) Log.i(TAG, "Starting Login Activity");
-          //TODO: Display a notification instead of starting the activity directly
-          
-          Intent intent = new Intent(DiscoveryService.this, LoginActivity.class);
-          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-          startActivity(intent);
-        }
-
-        DiscoveryService.this.stop();
-      }
-
-      @Override
-      public void onBack(){
-        if(D) Log.d(TAG, "BACK");
-        
-        DiscoveryService.this.stop();
-      }
-    });
-
-    adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
-  }
+  private SocialAuthAdapter adapter; // Initialized in sync
 
   private void login() {
     /* As of now it seems that the linkedin authenticator will not work. We should revist this later.
@@ -267,15 +225,20 @@ public class DiscoveryService extends Service {
       protected Boolean doInBackground(Void... params) {
         // Download the profile
         try {
+          // Querying synchronously is a bit cleaner, but we could get some speedup, by querying asynchrnously.
+          // (One thread per download)
           new ProfileObject(adapter.getUserProfile()).save(DiscoveryService.this);
         
         
           ContactsListObject clist = new ContactsListObject(adapter.getContactList());
           clist.save(DiscoveryService.this);
+          
+          Log.d(TAG, "Your " + clist.size() + " contacts have been downloaded");
+          
           clist.saveAuthorization(DiscoveryService.this);
           
           // Download Authorization
-          // TODO:
+          // TODO: for now this is computed
           
         } catch (NullPointerException e) {
           Log.e(TAG, "Download failed.", e);
@@ -384,7 +347,10 @@ public class DiscoveryService extends Service {
   
 
   // Operations on the profile
-  private void checkCommonFriends(List<ProfileObject> contactList, AuthorizationObject authobj) {
+  private void checkCommonFriends(
+      List<ProfileObject> contactList, 
+      AuthorizationObject authobj,
+      ProfileDownloadCallback callback) {
     //assume established communication channel with peer 
 
     if (authobj == null || contactList == null) {
@@ -398,7 +364,10 @@ public class DiscoveryService extends Service {
       input[i] = contactList.get(i).getId();
     }
 
-    (new CommonFriendsTest(mMessageService, authobj)).execute(input);
+    // This is really weird. Perhaps we should just inline the CommonFriendsTest, it might make more sense.
+    // I also really don't like the use of callback here, but it works for now
+    (new CommonFriendsTest(mMessageService, authobj, callback)).execute(input);
+    
 
   }
   
@@ -455,37 +424,90 @@ public class DiscoveryService extends Service {
 
     // TODO: We need stop all communications for sync to happen.
     
-    
-    downloadAll(new ProfileDownloadCallback () {
+    // Initialize the AuthAdapter
+    // This is a bit of callback hell, we may want to refactor this at some point.
+    // Basically, The dialoglistner's onComplete is called when authorization succeeds.
+    // We then call another async method to download the profiles.
+    // Once this completes, we transition away from the sync state (back to the initialize state)
+    adapter = new SocialAuthAdapter(new DialogListener() {
       @Override
-      public void onComplete() {
-        // Record the current time of sync;
-        SharedPreferences sharedPreference = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
-        SharedPreferences.Editor editor = sharedPreference.edit();
-        Timestamp ts = new Timestamp(System.currentTimeMillis());
-        Long time = ts.getTime();
-        editor.putLong("lastSync", time);
-        editor.commit();
+      public void onComplete(Bundle values) {
+        if(D) Log.d(TAG, "Authorization successful");
+        if(D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.LINKEDIN));
         
-        initialize();
+        downloadAll(new ProfileDownloadCallback () {
+          @Override
+          public void onComplete() {
+            // This is called, once all asyncs complete without error
+            
+            // Record the current time of sync;
+            SharedPreferences sharedPreference = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+            SharedPreferences.Editor editor = sharedPreference.edit();
+            Timestamp ts = new Timestamp(System.currentTimeMillis());
+            Long time = ts.getTime();
+            editor.putLong("lastSync", time);
+            editor.commit();
+            
+            initialize();
+          }
+          
+          @Override
+          public void onError() {
+            Log.e(TAG, "Unable to download profile. Perhpas internet is not avaialable");
+            
+            onSyncError();
+          }
+        });
       }
-      
+
+      // TODO: We need to display something useful to users in these failure cases
       @Override
-      public void onError() {
-        Log.e(TAG, "Unable to download profile. Perhpas internet is not avaialable");
-        // TODO: we need to schedule a sync for a later date, since this one was not successful.
+      public void onCancel() {
+        if(D) Log.d(TAG, "Cancel called");
+
+        onSyncError();
+      }     
+
+      @Override
+      public void onError(SocialAuthError er) {
+        if(D) Log.d(TAG, "Error", er);
         
-        // This is redundant work, but hopefully it wont happen very often.
-        if( loadContactsFromFile() == null ||  loadAuthorizationFromFile() == null || loadProfileFromFile() == null) {
-          // We definetly need to reschedule the sync in this case. 
-          Log.i(TAG, "No preloaded data available, stopping");
+        // This loginerror is thrown if we aren't currently logged in
+        if (er.getInnerException() instanceof LoginError){
+          if(D) Log.i(TAG, "Starting Login Activity");
+          //TODO: Display a notification instead of starting the activity directly
+          
+          Intent intent = new Intent(DiscoveryService.this, LoginActivity.class);
+          intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          startActivity(intent);
           stop();
         } else {
-          initialize();
+          onSyncError();
         }
       }
+
+      @Override
+      public void onBack(){
+        if(D) Log.d(TAG, "BACK");
+        
+        onSyncError();
+      }
     });
+
+    adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
+    login(); // Will start the callback process 
+  }
+  
+  private void onSyncError() {
+    // TODO: We need to schedule a sync for a later date.
     
+    if( loadContactsFromFile() == null ||  loadAuthorizationFromFile() == null || loadProfileFromFile() == null) {
+      // We definetly need to reschedule the sync in this case. 
+      Log.i(TAG, "No preloaded data available, stopping");
+      stop();
+    } else {
+      initialize();
+    }
   }
 
   // Inititalize the com service
@@ -562,12 +584,30 @@ public class DiscoveryService extends Service {
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
     Log.i(TAG, "Device connected, attempting to check for common friends");
-    checkCommonFriends(mContactList, authobj);
-    
-    // After words, we should re-enter the run state if we have more things to process. Otherwise we should enter the ready state.
+    checkCommonFriends(mContactList, authobj, new ProfileDownloadCallback() {
 
-    // For now, since we only handle a single connection, we just enter the ready state
-    ready();
+      // After this protocol completes, we enter the ready state
+      @Override
+      public void onComplete() {
+        // TODO: If we have more things to process we need to re-enter the run state.
+        ready();
+        
+        // TODO: We need to save the history of this event 
+        // We may also want to do something with the result, but for that we would need to modify the callback
+        // It may be a case for removing the callback completely.  
+      }
+
+      @Override
+      public void onError() {
+        Log.i(TAG, "Error occured connecting to [device]");
+        // TODO: we should incremembt device's failed counter
+        // If it is less than maximum retry attempts we should try again (possibly on next discovery)
+        // We also need to clear any state that we have saved due to contact with device
+        
+        ready();
+      }
+    });
+    
     
   }
 
@@ -704,9 +744,23 @@ public class DiscoveryService extends Service {
 
     // This extends AsyncTask, and thus we provide the UI specific methods here
     private class CommonFriendsTest extends ATWPSI {
+      
+      ProfileDownloadCallback callback;
 
-      public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject) {
+      public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject, ProfileDownloadCallback callback) {
         super(s, authObject);
+        
+        this.callback = callback;
+      }
+      
+      @Override
+      public List<String> doInBackground(String... params) {
+        try {
+          return super.doInBackground(params);
+        } catch (Exception e) {
+          Log.e(TAG, "CommonFriendsProtocol failed, ", e);
+          return null;
+        }
       }
 
       @Override
@@ -717,6 +771,10 @@ public class DiscoveryService extends Service {
       @Override
       public void onPostExecute(List<String> result) {
         Log.i(TAG, "Common friends protocol complete");
+        
+        if (result == null) {
+          callback.onError();
+        }
 
         // TODO: This is a strange place to do this, it would make more sense wrapped in a contact list object.
         HashMap<String, String> idToNameMap = new HashMap<String, String>();
@@ -728,12 +786,11 @@ public class DiscoveryService extends Service {
         for (String id : result){
           commonFriends.add(idToNameMap.get(id));
         }
-
-        /* 
-       CommonFriendsDialogFragment newFragment = new CommonFriendsDialogFragment(); //DialogFragme
-       newFragment.setCommonFriends(commonFriends);
-       newFragment.show(getFragmentManager(), "check-common-friends");
-         */
+        
+        // TODO: Set a notification containing a reference to the result of the test.
+        //  This is most easily done by using a DB, and storing the test id.
+        
+        callback.onComplete();
       }
 
     }

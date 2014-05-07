@@ -30,7 +30,7 @@ import android.widget.Toast;
 public class ContactsListObject extends ArrayList<ProfileObject> implements Serializable {
 
   private static String TAG = ContactsListObject.class.getSimpleName();
-  private static boolean D = true;
+  private static boolean D = false;
   
   private static String filename = "contacts";
 	/**
@@ -56,8 +56,6 @@ public class ContactsListObject extends ArrayList<ProfileObject> implements Seri
 	      if(D) Log.d(TAG, "ID: " + p.getId() + "\n");
 	    }
 	  }
-
-	  Log.d(TAG, "Your " + contactList.size() + " contacts have been downloaded");
 	  
 	  for (Contact c: contactList) {
       add(new ProfileObject(c.getFirstName(), c.getLastName(), c.getId()));
