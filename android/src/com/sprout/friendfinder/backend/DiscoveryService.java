@@ -7,7 +7,10 @@ import java.lang.ref.WeakReference;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.LoginError;
@@ -73,8 +76,9 @@ public class DiscoveryService extends Service {
   private static final int STATE_SYNC = 1;
   private static final int STATE_INIT = 2;
   private static final int STATE_READY = 3;
-  private static final int STATE_RUNNING = 4;
-  private static final int STATE_DISABLED = 5; // Usually because the medium is turned off
+  private static final int STATE_RUNNING = 4;   // iterating through discovered devices
+  private static final int STATE_CONNECTED = 5; // run a single instance of the protocol
+  private static final int STATE_DISABLED = 6; // Usually because the medium is turned off
 
   private int mState;
 
@@ -214,8 +218,11 @@ public class DiscoveryService extends Service {
     // TODO: We need to also delete saved information her
   }
   
+  // TODO: Eventually this may need to be more information.
+  // Perhaps it could all be encompassed into a single Profile
   ProfileObject mProfile;
   List<ProfileObject> mContactList;
+  AuthorizationObject mAuthObj; 
 
   // TODO: Rename donwloadAll
   private void downloadAll(final ProfileDownloadCallback callback) {
@@ -375,10 +382,46 @@ public class DiscoveryService extends Service {
   /* ** Utility Functions  *** */
   /*****************************/
   
+  private Set<Device> mDiscoveredDevices;
   // This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
     if(D) Log.i(TAG, "Searching for peers");
-    mMessageService.discoverPeers(mDiscoveryCallback);
+    mMessageService.discoverPeers(new CommunicationService.Callback(){  
+      @Override
+      public void onPeerDiscovered(Device peer) { 
+        if (V) Log.i(TAG, "Device: " + peer.getName() + " found, (But not verified)");
+      } // We don't use this function, since these devices may not be part of our app   
+
+      @Override
+      public void onDiscoveryComplete(boolean success){
+        if(!success) {
+          if (D) Log.e(TAG, "Discovery failed!");
+          stop();
+        }
+        else { 
+          if (D) Log.i(TAG, "Discovery completed");
+          run();
+        }
+      }
+
+      @Override
+      public void onDiscoveryStarted(){
+        if (D) Log.i(TAG, "Discovery started");
+        
+        if (mDiscoveredDevices == null) {
+          mDiscoveredDevices = new HashSet<Device>();
+        }
+        
+        mDiscoveredDevices.clear();
+      }
+
+      @Override
+      public void onServiceDiscovered(Device peer) {
+        Log.i(TAG, "Service discovered! Adding to waitlist " + peer.getName());
+        
+        mDiscoveredDevices.add(peer);
+      }
+    });
   }
 
   /*****************************/
@@ -398,6 +441,8 @@ public class DiscoveryService extends Service {
       return "READY";
     case STATE_RUNNING:
       return "RUNNING";
+    case STATE_CONNECTED:
+      return "CONNECTED";
     case STATE_DISABLED:
       return "DISABLED";
     default:
@@ -557,6 +602,7 @@ public class DiscoveryService extends Service {
     searchForPeers();
   }
 
+  private Device mRunningDevice;
   private void run() {
     setState(STATE_RUNNING);
 
@@ -572,10 +618,10 @@ public class DiscoveryService extends Service {
       mProfile = loadProfileFromFile();
     if (mContactList == null)
       mContactList = loadContactsFromFile(); 
+    if (mAuthObj == null)
+      mAuthObj = loadAuthorizationFromFile();
     
-    AuthorizationObject authobj = loadAuthorizationFromFile();
-    
-    if (mProfile == null || mContactList == null || authobj == null) {
+    if (mProfile == null || mContactList == null || mAuthObj == null) {
       Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
       
       sync();
@@ -584,13 +630,44 @@ public class DiscoveryService extends Service {
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
     Log.i(TAG, "Device connected, attempting to check for common friends");
-    checkCommonFriends(mContactList, authobj, new ProfileDownloadCallback() {
+    
+    Iterator<Device> i = mDiscoveredDevices.iterator();
+    
+    mRunningDevice = i.next();
+    
+    // If we have no devices more devices to connect to
+    if (mRunningDevice == null) {
+      // TODO: We comment this for now, since it will result in a loop
+      // Uncomment when discovery timers and device avoidance are in place
+      //ready();
+    }
+    
+    mMessageService.connect(mRunningDevice);
+    i.remove();
+    
+    // Upon establishing a connection we enter the connected() state
+  }
+  
+  private void connected() {
+    if (mState != STATE_RUNNING) {
+      Log.e(TAG, "Connected() called before calling run()");
+      stop();
+    }
+    
+    setState(STATE_CONNECTED);
+    
+    checkCommonFriends(mContactList, mAuthObj, new ProfileDownloadCallback() {
 
       // After this protocol completes, we enter the ready state
       @Override
       public void onComplete() {
-        // TODO: If we have more things to process we need to re-enter the run state.
-        ready();
+        if(V) Log.i(TAG, "Common friend detection complete.");
+        run();
+        
+        // TODO: Save the mRunningDevice to a persistent storage
+        //  Just wrap it in a class, and then persist the storage later
+        //  W/ the time sensitivity as discussed in the paper
+        // mRunningDevice
         
         // TODO: We need to save the history of this event 
         // We may also want to do something with the result, but for that we would need to modify the callback
@@ -599,57 +676,22 @@ public class DiscoveryService extends Service {
 
       @Override
       public void onError() {
-        Log.i(TAG, "Error occured connecting to [device]");
+        if(D) Log.i(TAG, "Error occured connecting to [device]");
         // TODO: we should incremembt device's failed counter
         // If it is less than maximum retry attempts we should try again (possibly on next discovery)
         // We also need to clear any state that we have saved due to contact with device
-        
-        ready();
+        // For now, we simply do nothing.
+        run();
       }
     });
-    
-    
   }
+    
 
   private void onDisabled() {
     setState(STATE_DISABLED);
     
     // TODO: Stop all communication attempts. (but be sure not to disable notification about enabled)
   }
-
-  /***************************/
-  /* *** Event Callbacks *** */
-  /***************************/
-
-  // Result of device discovery.
-  private CommunicationService.Callback mDiscoveryCallback = new CommunicationService.Callback(){
-
-    @Override
-    public void onPeerDiscovered(Device peer) { 
-      if (D) Log.i(TAG, "Device: " + peer.getName() + " found, (But not verified)");
-    } // We don't use this function, since these devices may not be part of our app   
-
-    @Override
-    public void onDiscoveryComplete(boolean success){
-      if(!success)
-        if (D) Log.e(TAG, "Discovery failed!");
-        else
-          if (D) Log.i(TAG, "Discovery completed");
-    }
-
-    @Override
-    public void onDiscoveryStarted(){
-      if (D) Log.i(TAG, "Discovery started");
-    }
-
-    @Override
-    public void onServiceDiscovered(Device peer) {
-      // TODO: We want to do this one at a time, we should have a Thread that pulls devices from a queue.
-      // Here we should simply put add this device to the queue
-      Log.i(TAG, "Service discovered! Attepting to connect to " + peer.getName());
-      mMessageService.connect(peer, false);
-    }
-  };
 
   /***************************/
   /* *** Message Handlers ** */
@@ -675,8 +717,9 @@ public class DiscoveryService extends Service {
           // TODO: Eventually, we need a way to toggle what test gets run.
           // For now we just checkCommonFriends
 
-          target.run();
+          target.connected();
       
+          // TODO: We need a way to transition away from running() if connecting fails
           break;
         case CommunicationService.STATE_CONNECTING:
           //setStatus(R.string.title_connecting);
