@@ -515,8 +515,6 @@ public class DiscoveryService extends Service {
 
       @Override
       public void onError(SocialAuthError er) {
-        if(D) Log.d(TAG, "Error", er);
-        
         // This loginerror is thrown if we aren't currently logged in
         if (er.getInnerException() instanceof LoginError){
           if(D) Log.i(TAG, "Starting Login Activity");
@@ -527,6 +525,7 @@ public class DiscoveryService extends Service {
           startActivity(intent);
           stop();
         } else {
+          if(D) Log.e(TAG, "Error", er);
           onSyncError();
         }
       }
