@@ -235,6 +235,7 @@ public class SocialAuthDialog extends Dialog {
 			if (url.startsWith(mProviderName.getCallBackUri())
 					&& (mProviderName.toString().equalsIgnoreCase("facebook") || mProviderName.toString()
 							.equalsIgnoreCase("twitter"))) {
+			  SocialAuthDialog.this.dismiss();
 				if (url.startsWith(mProviderName.getCancelUri())) {
 					// Handles Twitter and Facebook Cancel
 					mListener.onCancel();
@@ -268,7 +269,7 @@ public class SocialAuthDialog extends Dialog {
 					};
 					new Thread(runnable).start();
 				}
-				SocialAuthDialog.this.dismiss();
+				// SocialAuthDialog.this.dismiss();
 				return true;
 			}
 
@@ -292,8 +293,8 @@ public class SocialAuthDialog extends Dialog {
 
 			else if (url.startsWith(mProviderName.getCancelUri())) {
 				// Handles MySpace and Linkedin Cancel
+			  SocialAuthDialog.this.dismiss();
 				mListener.onCancel();
-				SocialAuthDialog.this.dismiss();
 				return true;
 			} else if (url.contains(DISPLAY_STRING)) {
 				return false;
@@ -308,8 +309,9 @@ public class SocialAuthDialog extends Dialog {
 			Log.d("SocialAuth-WebView", "Inside OnReceived Error");
 			Log.d("SocialAuth-WebView", String.valueOf(errorCode));
 			super.onReceivedError(view, errorCode, description, failingUrl);
-			mListener.onError(new SocialAuthError(description, new Exception(failingUrl)));
 			SocialAuthDialog.this.dismiss();
+			mListener.onError(new SocialAuthError(description, new Exception(failingUrl)));
+			
 		}
 
 		@Override
@@ -392,6 +394,7 @@ public class SocialAuthDialog extends Dialog {
 			// For Linkedin, MySpace, Runkeeper - Calls onPageStart to
 			// authorize.
 			if (url.startsWith(mProviderName.getCallBackUri())) {
+			  SocialAuthDialog.this.dismiss();
 				if (url.startsWith(mProviderName.getCancelUri())) {
 					mListener.onCancel();
 				} else {
@@ -429,7 +432,7 @@ public class SocialAuthDialog extends Dialog {
 					};
 					new Thread(runnable).start();
 				}
-				SocialAuthDialog.this.dismiss();
+				
 			}
 		}
 
