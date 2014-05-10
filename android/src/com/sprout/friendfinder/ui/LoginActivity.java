@@ -29,13 +29,14 @@ public class LoginActivity extends Activity {
         if(D) Log.d(TAG, "Authorization successful");
 
         Intent intent = new Intent(LoginActivity.this, DiscoveryService.class);
-        intent.setAction(DiscoveryService.ACTION_START);
+        intent.setAction(DiscoveryService.ACTION_RESTART);
         startService(intent);
 
         finish();
       }
 
       // TODO: What do we do if this fails, or is canceled?
+      // We probably need to display something to the user? Possibly remain in this activity?
       @Override
       public void onCancel() {
         if(D) Log.d(TAG, "Cancel called");

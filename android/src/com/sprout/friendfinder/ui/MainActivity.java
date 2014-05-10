@@ -327,7 +327,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
     private void doPostDiscoverable() {
       Log.i(TAG, "About to start the service");
       Intent intent = new Intent(this, DiscoveryService.class);
-      intent.setAction(DiscoveryService.ACTION_START);
+      intent.setAction(DiscoveryService.ACTION_RESTART);
       startService(intent);
     }
 

@@ -62,10 +62,11 @@ public class DiscoveryService extends Service {
   /***************************/
   /* *** Intent Actions  *** */
   /***************************/
+  public static final String ACTION_RESTART = "action_restart";
   public static final String ACTION_START = "action_start";
   public static final String ACTION_STOP = "action_stop";
   public static final String ACTION_SYNC = "action_sync";
-  public static final String ACTION_LOGOUT = "action_start";
+  public static final String ACTION_LOGOUT = "action_logout";
 
   /***************************/
   /* ***    STATES       *** */
@@ -128,10 +129,13 @@ public class DiscoveryService extends Service {
   public int onStartCommand(Intent intent, int flags, int startId) {
     if(L) Log.i(TAG, "Received start id " + startId + ": " + intent);
 
-    // We assume that any system restarts, are equivelent to an ACTION_START
+    // We assume that any system restarts, are equivalent to an ACTION_RESTART
     if (intent == null || intent.getAction() == null || intent.getAction().equals(ACTION_START)) {
       // If we are not in the stop state we should probably just do nothing, we've already been started
       //  For debug purposes, we simply restart ourselves
+      initialize();
+    } else if (intent.getAction().equals(ACTION_RESTART)) {
+      stop();
       initialize();
     } else if (intent.getAction().equals(ACTION_STOP)) {
       stop();
@@ -631,7 +635,7 @@ public class DiscoveryService extends Service {
     
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
-    if(D) Log.i(TAG, "Discovery completed attempting to connect");
+    if(D) Log.i(TAG, "Discovery stopped attempting to connect");
     
     Iterator<Device> i = mDiscoveredDevices.iterator();
     
@@ -827,6 +831,7 @@ public class DiscoveryService extends Service {
         
         if (result == null) {
           callback.onError();
+          return;
         }
 
         // TODO: This is a strange place to do this, it would make more sense wrapped in a contact list object.
