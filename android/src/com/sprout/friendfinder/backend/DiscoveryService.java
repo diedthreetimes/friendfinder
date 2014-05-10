@@ -386,7 +386,7 @@ public class DiscoveryService extends Service {
   /* ** Utility Functions  *** */
   /*****************************/
   
-  private Set<Device> mDiscoveredDevices;
+  private Set<Device> mDiscoveredDevices = new HashSet<Device>();
   // This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
     if(D) Log.i(TAG, "Searching for peers");
@@ -404,17 +404,15 @@ public class DiscoveryService extends Service {
         }
         else { 
           if (D) Log.i(TAG, "Discovery completed");
-          run();
+          
+          if (mState != STATE_CONNECTED && mState != STATE_RUNNING)
+            run();
         }
       }
 
       @Override
       public void onDiscoveryStarted(){
         if (D) Log.i(TAG, "Discovery started");
-        
-        if (mDiscoveredDevices == null) {
-          mDiscoveredDevices = new HashSet<Device>();
-        }
         
         mDiscoveredDevices.clear();
       }
@@ -595,10 +593,25 @@ public class DiscoveryService extends Service {
       stop();
       return;
     }
+    
+    // Before we start attempting connections, we need to make sure we have the available profile info
+    if (mProfile == null)
+      mProfile = loadProfileFromFile();
+    if (mContactList == null)
+      mContactList = loadContactsFromFile(); 
+    if (mAuthObj == null)
+      mAuthObj = loadAuthorizationFromFile();
 
+    if (mProfile == null || mContactList == null || mAuthObj == null) {
+      Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
+      
+      sync();
+      return;
+    }
+    
     mMessageService.start(false);
 
-    //TODO: Once we are in the ready state we need to start the timers periodiclaly calling discovery looking for connections
+    //TODO: Once we are in the ready state we need to start the timers periodically calling discovery looking for connections
     
     // Once we leave the ready state we need to make sure to stop these timers
     
@@ -618,20 +631,6 @@ public class DiscoveryService extends Service {
 
     // While in the run state we should do the following.
     // Connect to a single peer that was discovered, and run the protocol with that peer
-
-    if (mProfile == null)
-      mProfile = loadProfileFromFile();
-    if (mContactList == null)
-      mContactList = loadContactsFromFile(); 
-    if (mAuthObj == null)
-      mAuthObj = loadAuthorizationFromFile();
-    
-    if (mProfile == null || mContactList == null || mAuthObj == null) {
-      Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
-      
-      sync();
-      return;
-    }
     
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
@@ -648,15 +647,16 @@ public class DiscoveryService extends Service {
       return;
     }
     
-    mMessageService.connect(i.next());
+    mRunningDevice = i.next();
+    mMessageService.connect(mRunningDevice);
     i.remove();
     
     // Upon establishing a connection we enter the connected() state
   }
   
   private void connected() {
-    if (mState != STATE_RUNNING) {
-      Log.e(TAG, "Connected() called before calling run()");
+    if (mState != STATE_RUNNING && mState != STATE_READY) {
+      Log.e(TAG, "Connected() called before calling ready()");
       stop();
       return;
     }
@@ -731,6 +731,7 @@ public class DiscoveryService extends Service {
           // TODO: Eventually, we need a way to toggle what test gets run.
           // For now we just checkCommonFriends
 
+          // Is it possible that this will be fired while we are already connecting?
           target.connected();
       
           // TODO: We need a way to transition away from running() if connecting fails
