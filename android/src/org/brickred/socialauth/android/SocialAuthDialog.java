@@ -358,6 +358,9 @@ public class SocialAuthDialog extends Dialog {
 
 			// To set zoom density of linkedin dialog for ldpi and mdpi
 			if (mProviderName.toString().equalsIgnoreCase("linkedin")) {
+			  /*
+			   * SF: On modern phones this apears to display properly already
+			   * Plus, the setDefaultZoom id deprecated
 				if (Util.UI_DENSITY == 120)
 					mWebView.getSettings().setDefaultZoom(ZoomDensity.FAR);
 				else if (Util.UI_DENSITY == 160) {
@@ -367,6 +370,7 @@ public class SocialAuthDialog extends Dialog {
 						mWebView.getSettings().setDefaultZoom(ZoomDensity.MEDIUM);
 				} else
 					mWebView.setInitialScale(60);
+					*/
 			}
 
 			// To set zoom density of yammer dialog
