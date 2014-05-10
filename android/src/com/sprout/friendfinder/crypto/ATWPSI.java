@@ -145,7 +145,7 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
 	  		}
 	  	}
 
-	  	Log.d(TAG, "Found " + result.size() + " common friends");
+	  	Log.d(TAG, "Found " + result.size() + " common inputs");
 
 //	  		String[] inCommon = new String[inCommon2.size()];
 //	  		for (int l = 0; l < inCommon2.size(); l++) {
