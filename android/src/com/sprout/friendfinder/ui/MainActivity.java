@@ -105,6 +105,18 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
       finish();
       return;
     }
+    
+    if (mBluetoothAdapter.getScanMode() !=
+        BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+      // TODO: Note that enabling discovery also enables bluetooth, we shouldn't have any need to do both. 
+      Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+      discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0); // A value of 0 turns discoverability on forever.
+      // In the future if we would like to turn off discovery we can repeat this request with a value of 1
+      startActivityForResult(discoverableIntent, REQUEST_DISCOVERABLE);
+    }
+    else{
+      doPostDiscoverable();
+    }
   }
 
   //NOTE: This happens when an activity becomes visible
@@ -126,17 +138,7 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
     }
     */
  
-    if (mBluetoothAdapter.getScanMode() !=
-        BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-      // TODO: Note that enabling discovery also enables bluetooth, we shouldn't have any need to do both. 
-      Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-      discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0); // A value of 0 turns discoverability on forever.
-      // In the future if we would like to turn off discovery we can repeat this request with a value of 1
-      startActivityForResult(discoverableIntent, REQUEST_DISCOVERABLE);
-    }
-    else{
-      doPostDiscoverable();
-    }
+    
 
   }
 

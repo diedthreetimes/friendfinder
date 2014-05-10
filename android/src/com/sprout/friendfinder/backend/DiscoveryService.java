@@ -589,6 +589,7 @@ public class DiscoveryService extends Service {
     if (mMessageService == null) {
       Log.e(TAG, "Service ready, but no CommunicationService initialized");
       stop();
+      return;
     }
 
     mMessageService.start(false);
@@ -605,9 +606,10 @@ public class DiscoveryService extends Service {
   private void run() {
     setState(STATE_RUNNING);
 
-    if (mMessageService == null || mMessageService.getState() != CommunicationService.STATE_CONNECTED) {
-      Log.e(TAG, "Service ready, but CommunicationService not initialized, or not connected");
+    if (mMessageService == null ) {
+      Log.e(TAG, "Service ready, but CommunicationService not initialize");
       stop();
+      return;
     }
 
     // While in the run state we should do the following.
@@ -624,24 +626,25 @@ public class DiscoveryService extends Service {
       Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
       
       sync();
+      return;
     }
     
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
-    Log.i(TAG, "Device connected, attempting to check for common friends");
+    if(D) Log.i(TAG, "Discovery completed attempting to connect");
     
     Iterator<Device> i = mDiscoveredDevices.iterator();
     
-    mRunningDevice = i.next();
-    
     // If we have no devices more devices to connect to
-    if (mRunningDevice == null) {
+    if (!i.hasNext()) {
+      if(V) Log.d(TAG, "No more devices found");
       // TODO: We comment this for now, since it will result in a loop
       // Uncomment when discovery timers and device avoidance are in place
       //ready();
+      return;
     }
     
-    mMessageService.connect(mRunningDevice);
+    mMessageService.connect(i.next());
     i.remove();
     
     // Upon establishing a connection we enter the connected() state
@@ -651,10 +654,18 @@ public class DiscoveryService extends Service {
     if (mState != STATE_RUNNING) {
       Log.e(TAG, "Connected() called before calling run()");
       stop();
+      return;
+    }
+    
+    if (mMessageService == null || mMessageService.getState() != CommunicationService.STATE_CONNECTED) {
+      Log.e(TAG, "Running, but CommunicationService not initialized, or not connected");
+      stop();
+      return;
     }
     
     setState(STATE_CONNECTED);
     
+    if(D) Log.i(TAG, "Connected, attempting to check for common friends");
     checkCommonFriends(mContactList, mAuthObj, new ProfileDownloadCallback() {
 
       // After this protocol completes, we enter the ready state
