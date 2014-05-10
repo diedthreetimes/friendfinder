@@ -11,6 +11,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.brickred.socialauth.android.DialogListener;
 import org.brickred.socialauth.android.LoginError;
@@ -82,6 +84,13 @@ public class DiscoveryService extends Service {
   private static final int STATE_DISABLED = 6; // Usually because the medium is turned off
 
   private int mState;
+  
+  /***************************/
+  /* ** Tunable Constants ** */
+  /***************************/
+  
+  private static final int DISCOVERY_INTERVAL = 60; // Seconds
+  private static final int DEVICE_AVOID_TIMEOUT = 60*10;// 60*60*24; // Seconds
 
 
   /***************************/
@@ -116,6 +125,7 @@ public class DiscoveryService extends Service {
 
     setState(STATE_STOP);
     
+    discoveryTimer = new Timer("Discovery Timer");
   }
 
   @Override
@@ -123,6 +133,7 @@ public class DiscoveryService extends Service {
     if(L) Log.i(TAG, "Service being destroyed");
 
     stop();
+    discoveryTimer.cancel();
   }
 
   @Override
@@ -390,6 +401,7 @@ public class DiscoveryService extends Service {
   // This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
     if(D) Log.i(TAG, "Searching for peers");
+    
     mMessageService.discoverPeers(new CommunicationService.Callback(){  
       @Override
       public void onPeerDiscovered(Device peer) { 
@@ -585,6 +597,8 @@ public class DiscoveryService extends Service {
     }
   }
 
+  long lastDiscovery = 0;
+  Timer discoveryTimer;
   private void ready() {
     setState(STATE_READY);
 
@@ -615,10 +629,35 @@ public class DiscoveryService extends Service {
     
     // Once we leave the ready state we need to make sure to stop these timers
     
-    // For now, we just enter discovery
-    searchForPeers();
+
+    
+    long now = System.currentTimeMillis();
+    
+    // Was discovery run in the last INTERVAL seconds
+    if (lastDiscovery == 0 || lastDiscovery < (now - (DISCOVERY_INTERVAL * 1000)) ) {
+      // We may want to log the discovery when it completes (or starts),
+      //   however, this can be problematic if it is terminated early
+      //   Logging the discovery here shouldn't be an issue
+      lastDiscovery = System.currentTimeMillis();
+      searchForPeers();
+    } else { 
+      // Schedule the discovery to execute in DISCOVERY_INTERVAL s
+      discoveryTimer.schedule(new TimerTask() {
+
+        @Override
+        public void run() {
+          if(V) Log.i(TAG, "Discovery timer executing");
+          lastDiscovery = System.currentTimeMillis();
+          searchForPeers();
+        } 
+        
+      }, DISCOVERY_INTERVAL * 1000);
+    }
+    
+    // Discovery success will trigger entering the run() state. Failure will re-enter ready()
   }
 
+  private DeviceCache mDeviceCache = new DeviceCache(DEVICE_AVOID_TIMEOUT);
   private Device mRunningDevice;
   private void run() {
     setState(STATE_RUNNING);
@@ -634,22 +673,28 @@ public class DiscoveryService extends Service {
     
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
-    if(D) Log.i(TAG, "Discovery stopped attempting to connect");
+    if(D) Log.i(TAG, "Discovery stopped. attempting to connect");
     
     Iterator<Device> i = mDiscoveredDevices.iterator();
     
     // If we have no devices more devices to connect to
     if (!i.hasNext()) {
       if(V) Log.d(TAG, "No more devices found");
-      // TODO: We comment this for now, since it will result in a loop
-      // Uncomment when discovery timers and device avoidance are in place
-      //ready();
+      ready();
       return;
     }
     
     mRunningDevice = i.next();
-    mMessageService.connect(mRunningDevice);
     i.remove();
+    
+    
+    if( mDeviceCache.contains(mRunningDevice) ) {
+      if(D) Log.d(TAG, "Device in cache, avoiding. " + mRunningDevice);
+      run();// A bit strange way to loop through devcices, but it works
+      return;
+    } else {
+      mMessageService.connect(mRunningDevice);
+    }
     
     // Upon establishing a connection we enter the connected() state
   }
@@ -676,21 +721,18 @@ public class DiscoveryService extends Service {
       @Override
       public void onComplete() {
         if(V) Log.i(TAG, "Common friend detection complete.");
-        run();
-        
-        // TODO: Save the mRunningDevice to a persistent storage
-        //  Just wrap it in a class, and then persist the storage later
-        //  W/ the time sensitivity as discussed in the paper
-        // mRunningDevice
-        
+        mDeviceCache.add(mRunningDevice);
+             
         // TODO: We need to save the history of this event 
         // We may also want to do something with the result, but for that we would need to modify the callback
         // It may be a case for removing the callback completely.  
+        run();
       }
 
       @Override
       public void onError() {
         if(D) Log.i(TAG, "Error occured connecting to [device]");
+        
         // TODO: we should incremembt device's failed counter
         // If it is less than maximum retry attempts we should try again (possibly on next discovery)
         // We also need to clear any state that we have saved due to contact with device
@@ -732,6 +774,7 @@ public class DiscoveryService extends Service {
           // For now we just checkCommonFriends
 
           // Is it possible that this will be fired while we are already connecting?
+          
           target.connected();
       
           // TODO: We need a way to transition away from running() if connecting fails
@@ -761,9 +804,8 @@ public class DiscoveryService extends Service {
 
 
 
-      case CommunicationService.MESSAGE_DEVICE_NAME:
-        // If desired we can get the device name as
-        // msg.getData().getString(CommunicationService.DEVICE_NAME);
+      case CommunicationService.MESSAGE_DEVICE:
+        target.mRunningDevice = (Device) msg.getData().getSerializable(CommunicationService.DEVICE);
         break;            
       case CommunicationService.MESSAGE_TOAST:
         Toast.makeText(target.getApplicationContext(), msg.getData().getString(CommunicationService.TOAST),
