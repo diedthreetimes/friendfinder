@@ -55,4 +55,12 @@ public class DeviceCache {
     if (D) Log.d(TAG, "Device: " + device + " added to the cache");
     cache.put(device, now());
   }
+  
+  /**
+   * Clear the cache
+   */
+  public void clear() {
+    if (D) Log.d(TAG, "Clear...");
+    cache.clear();
+  }
 }

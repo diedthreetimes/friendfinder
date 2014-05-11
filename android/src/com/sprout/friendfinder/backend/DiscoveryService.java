@@ -20,7 +20,10 @@ import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -30,6 +33,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -42,6 +46,7 @@ import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.social.ContactsListObject;
 import com.sprout.friendfinder.social.ProfileObject;
+import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
 
 
@@ -90,7 +95,7 @@ public class DiscoveryService extends Service {
   /***************************/
   
   private static final int DISCOVERY_INTERVAL = 60; // Seconds
-  private static final int DEVICE_AVOID_TIMEOUT = 60*10;// 60*60*24; // Seconds
+  private static final int DEVICE_AVOID_TIMEOUT = 60*60*24; // Seconds
 
 
   /***************************/
@@ -144,6 +149,7 @@ public class DiscoveryService extends Service {
     if (intent == null || intent.getAction() == null || intent.getAction().equals(ACTION_START)) {
       // If we are not in the stop state we should probably just do nothing, we've already been started
       //  For debug purposes, we simply restart ourselves
+      reset();
       initialize();
     } else if (intent.getAction().equals(ACTION_RESTART)) {
       stop();
@@ -437,6 +443,53 @@ public class DiscoveryService extends Service {
       }
     });
   }
+  
+  // TODO: Find a way to combine notifications, if multiple peers are found
+  private static int DISPLAY_MAX = 7;
+  public void addNotification(ArrayList<String> sharedInputs) {
+    // It may be faster to send a pointer to the result set instead of serializing.
+    
+    NotificationCompat.Builder b = new NotificationCompat.Builder(this);
+    Intent notifyIntent = new Intent(this, IntersectionResultsActivity.class);
+    notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+    // Useful flags if we want to resume a current activity
+    // .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, sharedInputs);
+    
+    PendingIntent pendingIntent = PendingIntent.getActivity( this, 0, notifyIntent, 0 );
+
+    // Regular view
+    b.setContentIntent(pendingIntent)
+     .setSmallIcon(R.drawable.ic_notification)
+     .setContentTitle("Peer found")
+     .setContentText(""+sharedInputs.size() + " connections in common.")
+     .setAutoCancel(true);
+    
+    // Big view
+    NotificationCompat.InboxStyle style = 
+        new NotificationCompat.InboxStyle();
+    style.setBigContentTitle("Common connections:");
+    for (int i=0; i < DISPLAY_MAX && i < sharedInputs.size(); i++){
+      style.addLine(sharedInputs.get(i));
+    }
+    if( DISPLAY_MAX < sharedInputs.size() ) {
+      style.setSummaryText("And " + (sharedInputs.size() - DISPLAY_MAX) + " more...");
+    }
+    
+    b.setStyle(style);
+ 
+    NotificationManager mNotificationManager =
+        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    mNotificationManager.notify(10, b.build());
+  }
+  
+  /**
+   * Reset any saved state. Useful for debugging.
+   */
+  private void reset() {
+    mDeviceCache.clear();
+    lastDiscovery = 0;
+  }
 
   /*****************************/
   /* ** State Transitions  *** */
@@ -624,12 +677,6 @@ public class DiscoveryService extends Service {
     }
     
     mMessageService.start(false);
-
-    //TODO: Once we are in the ready state we need to start the timers periodically calling discovery looking for connections
-    
-    // Once we leave the ready state we need to make sure to stop these timers
-    
-
     
     long now = System.currentTimeMillis();
     
@@ -746,11 +793,11 @@ public class DiscoveryService extends Service {
   private void onDisabled() {
     setState(STATE_DISABLED);
     
-    // TODO: Stop all communication attempts. (but be sure not to disable notification about enabled)
+    // TODO: Stop all communication attempts. (but be sure not to disable messages about enabled events)
   }
 
   /***************************/
-  /* *** Message Handlers ** */
+  /* *** Message Handlers ** */ 
   /***************************/
 
   // The primary handler to receive messages form the com service
@@ -883,14 +930,13 @@ public class DiscoveryService extends Service {
           idToNameMap.put( prof.getId(), prof.getDisplayName());
         }
 
-        List<String> commonFriends = new ArrayList<String>();
+        ArrayList<String> commonFriends = new ArrayList<String>();
         for (String id : result){
           commonFriends.add(idToNameMap.get(id));
         }
         
-        // TODO: Set a notification containing a reference to the result of the test.
-        //  This is most easily done by using a DB, and storing the test id.
-        
+        addNotification(commonFriends);
+         
         callback.onComplete();
       }
 
