@@ -32,7 +32,7 @@ import com.sprout.friendfinder.ui.CommonFriendsDialogFragment.NoticeCommonFriend
 // It is important to note, that attempting to connect to a device should not happen until discovery is completed.
 // We may want to integrate this into the bluetooth service, i'm not sure. 
 
-public class MainActivity extends Activity implements NoticeCommonFriendsDialog {
+public class MainActivity extends Activity {
 
   private static final String TAG = MainActivity.class.getSimpleName();
   private static final boolean D = true;
@@ -254,17 +254,6 @@ public class MainActivity extends Activity implements NoticeCommonFriendsDialog 
     });
 
   } */
-  
-    //Ron: these are the implemented interface methods from CommonFriendsDialogFragment. Here we receive a callback when a button is pressed
-    public void onDialogPositiveClick(DialogFragment dialog) {
-      Toast.makeText(this, "You are now friends", Toast.LENGTH_SHORT).show();
-      //TODO: initiate the "becoming friends" process here
-      //Toast.makeText(this, "You are now friends with " + currentPeer.getName(), Toast.LENGTH_SHORT).show();
-    }
-
-    public void onDialogNegativeClick(DialogFragment dialog) {
-      //user doesn't want to get friends with the peer. Store this event here so that the user isn't shown this peer again (for a while)
-    }
 
     //Called when INTENT is returned
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
