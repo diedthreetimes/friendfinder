@@ -222,6 +222,16 @@ public class SocialAuthDialog extends Dialog {
 
 		mContent.addView(mWebView);
 	}
+	
+	// SF: This is a hack to get the spinner to dismiss, if the dialog is closed
+	//  There may be other user actions which don't clal dismiss. I'm not sure.
+	//  There is probably a cleaner way of ensuring the spinner is dismissed
+	@Override public void dismiss() {
+	  if(mSpinner != null && mSpinner.isShowing()) {
+	    mSpinner.dismiss();
+	  }
+	  super.dismiss();
+	}
 
 	/**
 	 * WebView Client
@@ -461,7 +471,9 @@ public class SocialAuthDialog extends Dialog {
 
 							mWebView.scrollTo(Util.UI_YAHOO_ALLOW, 0);
 						}
-						mSpinner.dismiss();
+						if(mSpinner != null && mSpinner.isShowing()) {
+				      mSpinner.dismiss();
+				    }
 					}
 
 					if (mProviderName.toString().equalsIgnoreCase("yammer")) {
@@ -487,8 +499,11 @@ public class SocialAuthDialog extends Dialog {
 				mTitle.setText(title);
 			}
 
-			if (!mProviderName.toString().equalsIgnoreCase("yahoo"))
-				mSpinner.dismiss();
+			if (!mProviderName.toString().equalsIgnoreCase("yahoo")) {
+			  if(mSpinner != null && mSpinner.isShowing()) {
+		      mSpinner.dismiss();
+		    }
+			}
 		}
 
 	}
