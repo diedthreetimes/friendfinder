@@ -3,7 +3,6 @@ package com.sprout.friendfinder.ui;
 import java.sql.Timestamp;
 
 import android.app.Activity;
-import android.app.DialogFragment;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,7 +18,6 @@ import android.widget.Toast;
 
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.DiscoveryService;
-import com.sprout.friendfinder.ui.CommonFriendsDialogFragment.NoticeCommonFriendsDialog;
 
 /* 
  * Ron: this class now implements also the NoticeCommonFriendsDialog interface so that we can get feedback
