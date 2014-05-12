@@ -8,38 +8,46 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.util.List;
 
 public class AuthorizationObject implements Serializable {
 	private static final long serialVersionUID = -8723688620635455716L;
 	
+
+	/**
+	 * Number of seconds a signature should be considered valid
+	 */
+	private static final int VALID_SECONDS = 7*24*60*60;
+	
 	private BigInteger R;
 	private BigInteger auth;
-	private BigInteger N, e;
 	
 	public AuthorizationObject() {
 		
 	}
 	
-	public AuthorizationObject(BigInteger R, BigInteger auth, BigInteger N, BigInteger e) {
+	public AuthorizationObject(BigInteger R, BigInteger auth) {
 		this.R = R;
 		this.auth = auth;
-		this.N = N;
-		this.e = e;
 	}
+	
+	
+  public boolean verify() {
+    // We may want a way to verify arbitrary data. In case the signature is detached. 
+    
+    
+    return true;
+  }
 	
 	public void writeObject(java.io.ObjectOutputStream out)
 		       throws IOException {
 		out.writeObject(this.R);
 		out.writeObject(this.auth);
-		out.writeObject(this.N);
-		out.writeObject(this.e);
 	}
 	
 	public AuthorizationObject readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		this.R = (BigInteger) in.readObject();
 		this.auth = (BigInteger) in.readObject();
-		this.N = (BigInteger) in.readObject();
-		this.e = (BigInteger) in.readObject();
 		return this;
 	}
 	
@@ -51,11 +59,8 @@ public class AuthorizationObject implements Serializable {
 		return this.auth;
 	}
 	
-	public BigInteger getN() {
-		return this.N;
-	}
-	
-	public BigInteger gete() {
-		return this.e;
-	}
+	public List<BigInteger> getData () {
+    // decode the encoded data object if necessary
+    return null;
+  }
 }
