@@ -76,7 +76,7 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     s.write(authObj.getAuth());
 
     //A received B's auth:
-    peerAuth = (AuthorizationObject) s.readSerializable();
+    peerAuth = (AuthorizationObject) s.readSerializable(); // TODO: We need to resolve what is sent and received
 
     //A checks B's auth:
     if (peerAuth.verify()) {

@@ -19,6 +19,7 @@ import org.brickred.socialauth.android.LoginError;
 import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
+import org.brickred.socialauth.util.AccessGrant;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -258,16 +259,12 @@ public class DiscoveryService extends Service {
           new ProfileObject(adapter.getUserProfile()).save(DiscoveryService.this);
         
         
-          ContactsListObject clist = new ContactsListObject(adapter.getContactList());
-          clist.save(DiscoveryService.this);
+          new ContactsListObject(adapter.getContactList()).save(DiscoveryService.this);
           
-          Log.d(TAG, "Your " + clist.size() + " contacts have been downloaded");
+          AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
+          AuthorizationDownloader.download(grant.getKey(), grant.getSecret()).save(DiscoveryService.this);
           
-          clist.saveAuthorization(DiscoveryService.this);
-          
-          // Download Authorization
-          // TODO: for now this is computed
-          
+          if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
           Log.e(TAG, "Download failed.", e);
           return false;

@@ -88,17 +88,4 @@ public class ContactsListObject extends ArrayList<ProfileObject> implements Seri
     objectOutput.close();
     Log.d(TAG, "Contacts saved");
 	}
-	
-
-	// TODO: This shoudln't be done here, but until we integrate the server, we need it.
-  public void saveAuthorization(Context context) throws IOException {
-    AuthorizationObject authObj = new AuthorizationObject(Rc, auth, N, e);
-    String authfilename = "authorization";
-
-    FileOutputStream fileOutput = context.openFileOutput(authfilename, Context.MODE_PRIVATE);
-    ObjectOutputStream objectOutput = new ObjectOutputStream(fileOutput);
-    authObj.writeObject(objectOutput);
-    objectOutput.close();
-    Log.d(TAG, "Authorization saved");
-  }
 }
