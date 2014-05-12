@@ -37,7 +37,7 @@ class HbcPsi
 
     sig = CA.sign(string_set)
     # Do we want to include the data in the signature? It seems that it's encoding is smaller
-    {msg: string_set, sig: sig.to_pem, secret: encode( ru )}
+    {signed_message: sig.to_pem, secret: encode( ru )}
 
   end
 

@@ -5,7 +5,7 @@ module CA
   @@sk = OpenSSL::PKey::RSA.new(File.open(CaServer::Application.config.sig_key_location).read)
   @@cert = OpenSSL::X509::Certificate.new( File.open(CaServer::Application.config.cert_location).read )
 
-  def self.sign m, detached = true
+  def self.sign m, detached = false
     # This should already include the timestamp. However, we may need to manually validate it hasn't expired
 
     flags = OpenSSL::PKCS7::BINARY |
