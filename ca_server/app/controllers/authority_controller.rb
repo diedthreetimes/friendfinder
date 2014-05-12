@@ -1,4 +1,6 @@
 require 'hbc_psi'
+require 'ca'
+
 class AuthorityController < ApplicationController
   respond_to :json, :html
   def login
@@ -25,22 +27,22 @@ class AuthorityController < ApplicationController
 
   def download_profile
     with_log_in do |c|
-      respond_with( c.profile )
+      respond_with( CA.sign(c.profile.to_json, false).to_pem )
     end
   end
 
   def download_connections
     with_log_in do |c|
-      # @profile = client.profile
-
       connections = c.connections[:all]
       private_friends = connections.select{|f| f.first_name == "private"}
       friends = connections.select{|f| f.first_name != "private"}
 
       resp = {}
       resp[:count] = friends.count
-      resp[:connections] = friends
-      resp[:privates] = private_friends.count
+      if !params[:include_connections].nil?
+        resp[:connections] = friends
+        resp[:privates] = private_friends.count
+      end
       #resp[:connections] = c.profile( id: friends.first["id"], fields: %w(positions) )
 
       resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v[:id]})

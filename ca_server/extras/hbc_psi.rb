@@ -24,6 +24,8 @@ class HbcPsi
     F3256305 6CB67A86 1158DDD9 0E6A894C 72A5BBEF 9E286C6B
   EOS
 
+  @@t = (p-1)/q
+
   def self.sig_message set
     #TODO: Ensure set is unique and flat
 
@@ -34,8 +36,8 @@ class HbcPsi
     end.join(' ')
 
     sig = CA.sign(string_set)
-    #Signature is computed by converting result hash table to a string, and signing the string
-    {msg: string_set, sig: sig, secrets: encode( ru )}
+    # Do we want to include the data in the signature? It seems that it's encoding is smaller
+    {msg: string_set, sig: sig.to_pem, secret: encode( ru )}
 
   end
 
@@ -54,8 +56,9 @@ class HbcPsi
     end
   end
 
-  def self.hash_str(s)
-    modpow(@@g, Digest::SHA1.hexdigest(s).hex, @@q)
+  # Selector should be a binary string
+  def self.hash_str(s, selector = "\0")
+    modpow(Digest::SHA1.hexdigest(selector+s).hex, @@t, @@p)
   end
 
   def self.bigrand(bytes)

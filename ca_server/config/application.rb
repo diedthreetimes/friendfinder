@@ -60,5 +60,6 @@ module CaServer
     config.assets.version = '1.0'
 
     config.sig_key_location = 'app/keys/sig_key'
+    config.cert_location = 'app/keys/cert.pem'
   end
 end
