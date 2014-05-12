@@ -11,21 +11,14 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.brickred.socialauth.Contact;
 
-import com.sprout.friendfinder.crypto.AuthorizationObject;
-
 import android.content.Context;
 import android.util.Log;
-import android.widget.Toast;
 
 public class ContactsListObject extends ArrayList<ProfileObject> implements Serializable {
 

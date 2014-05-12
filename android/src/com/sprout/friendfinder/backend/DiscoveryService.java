@@ -4,6 +4,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
+import java.security.Security;
+import java.security.cert.CertificateException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,6 +22,7 @@ import org.brickred.socialauth.android.SocialAuthAdapter;
 import org.brickred.socialauth.android.SocialAuthAdapter.Provider;
 import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.util.AccessGrant;
+import org.json.JSONException;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -50,6 +53,7 @@ import com.sprout.friendfinder.social.ProfileObject;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
 
+import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 // TODO: General
 //    Monitor INTERNET access state.
@@ -96,7 +100,15 @@ public class DiscoveryService extends Service {
   /***************************/
   
   private static final int DISCOVERY_INTERVAL = 60; // Seconds
-  private static final int DEVICE_AVOID_TIMEOUT = 60*60*24; // Seconds
+  private static final int DEVICE_AVOID_TIMEOUT = 60*60*24; // Seconds 
+  
+  /***************************/
+  /* * Spoungy Castle Init * */
+  /***************************/
+  
+  static {
+    Security.addProvider(new BouncyCastleProvider());
+  }
 
 
   /***************************/
@@ -262,7 +274,8 @@ public class DiscoveryService extends Service {
           new ContactsListObject(adapter.getContactList()).save(DiscoveryService.this);
           
           AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
-          AuthorizationDownloader.download(grant.getKey(), grant.getSecret()).save(DiscoveryService.this);
+          // TODO:!!!!! Is this correct
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret()).save(DiscoveryService.this);
           
           if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
@@ -270,6 +283,12 @@ public class DiscoveryService extends Service {
           return false;
         }
         catch (IOException e) {
+          return false;
+        } catch (JSONException e) {
+          Log.e(TAG, "Authorization json can not be parsed", e);
+          return false;
+        } catch (CertificateException e) {
+          Log.e(TAG, "Certificate loading error", e);
           return false;
         }
         
@@ -349,7 +368,13 @@ public class DiscoveryService extends Service {
   }
 
   public AuthorizationObject loadAuthorizationFromFile() {
-    AuthorizationObject authObj = new AuthorizationObject();
+    AuthorizationObject authObj;
+    try {
+      authObj = new AuthorizationObject(this);
+    } catch (Exception e) {
+      Log.e(TAG, "Certificate could not be laoded. ", e);
+      return null;
+    }
     String filename = "authorization";
     FileInputStream fileInput;
     ObjectInputStream objectInput; 

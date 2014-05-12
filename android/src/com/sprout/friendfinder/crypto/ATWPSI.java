@@ -33,10 +33,7 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     authObj = authObject;
   }
 
-  // TODO: We need a way to set the authorization parameters.
-  //   This is probably easiest to do in a function
-
-  // TODO: Make this protocol pipelined
+  // TODO: Make this protocol threaded
 
   @Override
   protected List<String> conductClientTest(CommunicationService s, String... input) {
@@ -76,14 +73,14 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     s.write(authObj.getAuth());
 
     //A received B's auth:
-    peerAuth = (AuthorizationObject) s.readSerializable(); // TODO: We need to resolve what is sent and received
+    peerAuth = new AuthorizationObject(authObj, s.readString()); // TODO: We need to resolve what is sent and received
 
     //A checks B's auth:
     if (peerAuth.verify()) {
-      Log.d(TAG, "A: Contact set verification succeeded");
+      Log.d(TAG, "Contact set verification succeeded");
     }
     else {
-      Log.d(TAG, "A: Contact set verification failed");
+      Log.d(TAG, "Contact set verification failed");
       return null; // TODO: Raise here instead
     }
 

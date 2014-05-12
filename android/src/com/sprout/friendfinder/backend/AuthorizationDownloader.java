@@ -3,12 +3,15 @@ package com.sprout.friendfinder.backend;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.security.cert.CertificateException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONException;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.sprout.friendfinder.crypto.AuthorizationObject;
@@ -20,7 +23,7 @@ public class AuthorizationDownloader {
   private static final String TAG = AuthorizationDownloader.class.getSimpleName();
   private static final boolean D = true;
   
-  public static AuthorizationObject download(String token, String verifier) throws ClientProtocolException, IOException {
+  public static AuthorizationObject download(Context context, String token, String verifier) throws ClientProtocolException, IOException, JSONException, CertificateException {
 
     
 
@@ -47,7 +50,8 @@ public class AuthorizationDownloader {
     String result = buffer.toString(); 
     bufReader.close(); 
     
-    return new AuthorizationObject(result);
+    return new AuthorizationObject(context, result);
+
   }
 
 }
