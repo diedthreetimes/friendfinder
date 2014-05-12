@@ -91,41 +91,7 @@ public class ContactsListObject extends ArrayList<ProfileObject> implements Seri
 	
 
 	// TODO: This shoudln't be done here, but until we integrate the server, we need it.
-  
-  BigInteger p = new BigInteger("00dba2d30dfc225ffcd894015d8971" +
-      "6c2693e7d35c051670eb850337a41f" + 
-      "719855ebc0839747651487a4f178cd" +
-      "3f5c17cccb66f7baa8f8f54c3c2021" + 
-      "9a95f37f41", 16);
-  BigInteger q = new BigInteger("00d10e691f38413dc6ca084a403059" +
-      "de7934422b44436ffc8b4b35572e24" +  
-      "e5df78615bfabc7251f1e050bb5a75" +
-      "598e0d957c9ae96457442a43db9130" +
-      "4c64d11e9b",16);
-  BigInteger N = p.multiply(q);
-  BigInteger e = BigInteger.valueOf(3);
-  BigInteger d = e.modInverse(p.subtract(BigInteger.ONE).multiply(q.subtract(BigInteger.ONE)));
-  
   public void saveAuthorization(Context context) throws IOException {
-    List<BigInteger> ais = new ArrayList<BigInteger>();
-    BigInteger Rc  = randomRange(N);
-    
-    
-    for (ProfileObject c : this) {
-      ais.add(hash(c.getId().getBytes(), (byte)0).modPow(Rc, N));
-    }
-    
-    BigInteger auth = BigInteger.ONE;
-    for (BigInteger ai : ais) {
-      auth = auth.multiply(ai).mod(N); 
-    }
-    //hash&sign:
-    auth = hash(auth.toByteArray(), (byte)0).mod(N);
-    auth = auth.modPow(d, N);
-    Log.d(TAG, "Auth(a): " + auth.toString());
-
-  
-  
     AuthorizationObject authObj = new AuthorizationObject(Rc, auth, N, e);
     String authfilename = "authorization";
 
@@ -135,41 +101,4 @@ public class ContactsListObject extends ArrayList<ProfileObject> implements Seri
     objectOutput.close();
     Log.d(TAG, "Authorization saved");
   }
-  
-
-	protected BigInteger hash(byte [] message, byte selector){
-
-	  // input = selector | message
-	  byte [] input = new byte[message.length + 1];
-	  System.arraycopy(message, 0, input, 1, message.length);
-	  input[0] = selector;
-
-	  MessageDigest digest = null;
-	  try {
-	    digest = MessageDigest.getInstance("SHA-1");
-	  } catch (NoSuchAlgorithmException e1) {
-	    Log.e("Crypto", "SHA-1 is not supported");
-	    return null; // TODO: Raise an error?
-	  }
-	  digest.reset();
-
-	  return new BigInteger(digest.digest(input));
-	}
-
-
-	//this is not the right place for the functionality:
-	protected BigInteger randomRange(BigInteger range){
-	  //TODO: Is there anything else we should fall back on here perhaps openssl bn_range
-	  //         another option is using an AES based key generator (the only algorithim supported by android)
-
-	  // TODO: Should we be keeping this rand around? 
-	  SecureRandom rand = new SecureRandom();
-	  BigInteger temp = new BigInteger(range.bitLength(), rand);
-	  while(temp.compareTo(range) >= 0 || temp.equals(BigInteger.ZERO)){
-	    temp = new BigInteger(range.bitLength(), rand);
-	  }
-	  return temp;
-
-	}
-	
 }

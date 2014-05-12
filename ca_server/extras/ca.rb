@@ -7,6 +7,7 @@ module CA
 
   def self.sign m, detached = false
     # This should already include the timestamp. However, we may need to manually validate it hasn't expired
+    # TODO: Verify the time is included
 
     flags = OpenSSL::PKCS7::BINARY |
       OpenSSL::PKCS7::NOCERTS |
