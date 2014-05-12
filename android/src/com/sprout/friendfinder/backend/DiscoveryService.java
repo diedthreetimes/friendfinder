@@ -106,9 +106,9 @@ public class DiscoveryService extends Service {
   /* * Spoungy Castle Init * */
   /***************************/
   
-  static {
+  /*static {
     Security.addProvider(new BouncyCastleProvider());
-  }
+  }*/
 
 
   /***************************/

@@ -33,7 +33,7 @@ public class AuthorizationDownloader {
     		"&oauth_verifier=" + verifier // 79135
     		);
     
-    if(D) Log.d(TAG, "Attempting a get of " + httpGet.toString());
+    if(D) Log.d(TAG, "Attempting a get of " + httpGet.getURI());
     
     HttpResponse httpResponse = httpClient.execute(httpGet);
 

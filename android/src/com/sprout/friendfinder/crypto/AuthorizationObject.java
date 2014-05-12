@@ -49,7 +49,7 @@ public class AuthorizationObject implements Serializable {
   private X509Certificate cert;
 
   private static String defaultFilename = "authorization";
-  private static String certFilename = "server_cert.pem";
+  private static String certFilename = "server_cert.crt"; // Pem should also work if needed
 
   // TODO: There should be a static load function instead of an empty constructor
   public AuthorizationObject(Context ctx) throws IOException, CertificateException {
@@ -85,7 +85,7 @@ public class AuthorizationObject implements Serializable {
   private void loadCert(Context context) throws IOException, CertificateException {
     Resources resources = context.getResources();
     AssetManager assetManager = resources.getAssets();
-    InputStream inputStream = assetManager.open("oauth_consumer.properties");
+    InputStream inputStream = assetManager.open(certFilename);
     
     CertificateFactory factory = CertificateFactory.getInstance("X.509");  
     cert = (X509Certificate) factory.generateCertificate(inputStream); 
@@ -180,9 +180,10 @@ public class AuthorizationObject implements Serializable {
       
       cms.getSignedContent().write(out);
       
-      out.toByteArray();
-      // Here we now we should have the data
-      // TODO: !!!!!
+      byte [] bytes = out.toByteArray();
+      
+      // TODO: !!!!!!
+      
       
       return null;
     } catch (CMSException e) {
