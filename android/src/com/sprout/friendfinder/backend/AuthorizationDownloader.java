@@ -42,14 +42,11 @@ public class AuthorizationDownloader {
     StringBuffer buffer = new StringBuffer();
     String line = bufReader.readLine();
 
-    Log.d(TAG, "Processing Response");
+    if(D) Log.d(TAG, "Processing Response");
     while (line != null) {
-      Log.d(TAG, line);
       buffer.append(line + "\n");
-      Log.d(TAG, "after append");
       line = bufReader.readLine(); // TODO: Why is this not reading anymore
     }
-    Log.d(TAG, "DONE");
 
     String result = buffer.toString(); 
     bufReader.close(); 

@@ -274,7 +274,6 @@ public class DiscoveryService extends Service {
           new ContactsListObject(adapter.getContactList()).save(DiscoveryService.this);
           
           AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
-          // TODO:!!!!! Is this correct
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret()).save(DiscoveryService.this);
           
           if(V) Log.d(TAG, "Downloads complete");

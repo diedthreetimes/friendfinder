@@ -19,6 +19,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.spongycastle.cms.CMSException;
@@ -78,8 +79,10 @@ public class AuthorizationObject implements Serializable {
     loadCert(ctx);
     JSONObject jObject = new JSONObject(response);
     
-    auth = jObject.getString("psi_message");
-    R = decode( jObject.getString("secret") );
+     JSONObject msg = jObject.getJSONObject("psi_message");//jObject.getString("psi_message");
+    
+    auth = msg.getString("signed_message");
+    R = decode( msg.getString("secret") );
     
   }
   

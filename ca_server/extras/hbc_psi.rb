@@ -42,6 +42,9 @@ class HbcPsi
   end
 
   def self.encode bn
+    # Radix 16 print the bn
+    # Then convert to hex high nible first
+    # Finally base64 encode
     [[bn.to_s(16)].pack("H*")].pack("m")
   end
 
