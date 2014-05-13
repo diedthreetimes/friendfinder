@@ -6,8 +6,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry exported="true" kind="lib" path="libs/socialauth-4.2.jar"/>
-	<classpathentry kind="lib" path="/FinderLib/lib/sccore-1.50.0.0.jar"/>
-	<classpathentry kind="lib" path="/FinderLib/lib/scprov-1.50.0.0.jar"/>
-	<classpathentry kind="lib" path="libs/scpkix-1.50.0.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="/FinderLib/lib/sccore-1.50.0.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="/FinderLib/lib/scprov-1.50.0.0.jar"/>
+	<classpathentry exported="true" kind="lib" path="libs/scpkix-1.50.0.0.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

@@ -47,29 +47,16 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     Log.d(TAG, "STARTING TEST");
 
     //keep track of state the PSI protocol currently is in
-    BigInteger Ra, Rb;
-    List<BigInteger> zis, yis;
+    BigInteger Ra;
+    List<BigInteger> zis;
     AuthorizationObject peerAuth;
     List<BigInteger> T, T2;
 
     Ra = authObj.getR(); //Rc as chosen by the CA when certifying the set of contacts
-
     zis = authObj.getData();
-    // TODO: Remove this once we know authorization is working
-    //		zis = new ArrayList<BigInteger>();
-    //		for (String inp : input) {
-    //			BigInteger zi = hash(inp).modPow(Ra, p); // TODO: This set needs to be part of the authorization.
-    //			zis.add(zi);		
-    //		}
-
-    //send zis + auth to peer:
-    //send number of zis first, so that peer knows how many BigInt-Reads it has to conduct:
-    //		s.write(String.valueOf(zis.size()));
-    //		
-    //	  	//A sends zis to B
-    //	  	for (int i = 0; i < zis.size(); i++) {          		  
-    //	  		s.write(zis.get(i));
-    //	  	}
+    
+    Log.d(TAG, "Zis length: " + zis.size());
+    
     s.write(authObj.getAuth());
 
     //A received B's auth:
@@ -86,6 +73,8 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
 
     //A decodes B's yis
     List<BigInteger> peerSet = peerAuth.getData();
+    
+    Log.d(TAG, "Size of yis: " + peerSet.size());
 
     // TODO: Implement and measure threading
     //A performs computations on yis and sends them to B:
@@ -110,7 +99,7 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
 
     for (int l = 0; l < T2.size(); l++) {
       for (int l2 = 0; l2 < T.size(); l2++) {
-        if (T.get(l).equals(T2.get(l2))) {
+        if (T.get(l2).equals(T2.get(l))) {
           result.add(input[l]);
         }
       }

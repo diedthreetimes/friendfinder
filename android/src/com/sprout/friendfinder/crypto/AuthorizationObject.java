@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.io.StringReader;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateException;
@@ -22,10 +23,12 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.spongycastle.asn1.cms.ContentInfo;
 import org.spongycastle.cms.CMSException;
 import org.spongycastle.cms.CMSSignedData;
 import org.spongycastle.cms.SignerInformation;
 import org.spongycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.spongycastle.openssl.PEMParser;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -78,9 +81,9 @@ public class AuthorizationObject implements Serializable {
   public AuthorizationObject(Context ctx, String response) throws JSONException, IOException, CertificateException {
     loadCert(ctx);
     JSONObject jObject = new JSONObject(response);
-    
-     JSONObject msg = jObject.getJSONObject("psi_message");//jObject.getString("psi_message");
-    
+
+    JSONObject msg = jObject.getJSONObject("psi_message");
+     
     auth = msg.getString("signed_message");
     R = decode( msg.getString("secret") );
     
@@ -119,7 +122,9 @@ public class AuthorizationObject implements Serializable {
     
     // TODO: Validate the time
     try {
-      CMSSignedData cms = new CMSSignedData(Base64.decode(auth.getBytes(), Base64.DEFAULT));
+      @SuppressWarnings("resource")
+      ContentInfo ci = (ContentInfo) new PEMParser(new StringReader(auth)).readObject();
+      CMSSignedData cms = new CMSSignedData(ci);
     
 
       // Retreive the first signer
@@ -128,11 +133,7 @@ public class AuthorizationObject implements Serializable {
       // Verify
       //signer.verify(new BcRSASignerInfoVerifierBuilder(new DefaultDigestAlgorithmIdentifierFinder(), new BcDigestCalculatorProvider()).build(cert))));
       // Another alternative. The difference is in the providers
-      boolean result = signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(cert));
-
-
-      System.out.println("Verified: "+result);
-
+      boolean result = signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("SC").build(cert));
 
       return result;
     } catch (Exception e) {
@@ -177,7 +178,9 @@ public class AuthorizationObject implements Serializable {
     // decode the encoded data object if necessary
     
     try {
-      CMSSignedData cms = new CMSSignedData(Base64.decode(auth.getBytes(), Base64.DEFAULT));
+      @SuppressWarnings("resource")
+      ContentInfo ci = (ContentInfo) new PEMParser(new StringReader(auth)).readObject();
+      CMSSignedData cms = new CMSSignedData(ci);
  
       
       ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -198,7 +201,7 @@ public class AuthorizationObject implements Serializable {
      }
       
       
-      return null;
+      return ret;
     } catch (CMSException e) {
       Log.e(TAG, "Authorization processing error" , e);
       return null;
