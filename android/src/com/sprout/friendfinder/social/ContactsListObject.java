@@ -36,8 +36,6 @@ public class ContactsListObject extends ArrayList<ProfileObject> implements Seri
 	}
 	
 	public ContactsListObject(List<Contact> contactList) {
-	  Log.d(TAG, "Number of Contacts: " + contactList.size());
-
 	  for (Iterator<Contact> it = contactList.iterator(); it.hasNext(); ) {
 	    Contact p = it.next();
 
@@ -49,6 +47,8 @@ public class ContactsListObject extends ArrayList<ProfileObject> implements Seri
 	      if(D) Log.d(TAG, "ID: " + p.getId() + "\n");
 	    }
 	  }
+	  
+	  Log.d(TAG, "Number of Contacts: " + contactList.size());
 	  
 	  for (Contact c: contactList) {
       add(new ProfileObject(c.getFirstName(), c.getLastName(), c.getId()));

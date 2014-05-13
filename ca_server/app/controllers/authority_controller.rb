@@ -60,18 +60,27 @@ class AuthorityController < ApplicationController
   end
 
   def with_log_in &block
-    if session[:atoken].nil?
+    if session[:atoken].nil? && params[:oauth_access_token].nil?
       if params[:oauth_verifier].nil?
         redirect_to action: 'login', format: request.format.to_sym
         return
       end
 
+      puts "Before HA"
       pin = params[:oauth_verifier]
       atoken, asecret = client.authorize_from_request(session[:rtoken], session[:rsecret], pin)
+
       session[:atoken] = atoken
       session[:asecret] = asecret
-    else
+    elsif !session[:atoken].nil?
       client.authorize_from_access(session[:atoken], session[:asecret])
+    else
+      if params[:oauth_secret].nil?
+        render :nothing => true, :status => 400
+        return
+      end
+
+      client.authorize_from_access(params[:oauth_access_token], params[:oauth_secret])
     end
 
     block.call(client)

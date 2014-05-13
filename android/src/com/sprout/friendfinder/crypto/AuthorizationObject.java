@@ -16,6 +16,7 @@ import java.nio.ByteBuffer;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONException;
@@ -182,7 +183,16 @@ public class AuthorizationObject implements Serializable {
       
       byte [] bytes = out.toByteArray();
       
-      // TODO: !!!!!!
+      // the data should be a string that is a series of base64 encodded bigintegers seperated by spaces
+      // So the following *shoudl* work
+      
+     String base64 = new String(bytes);
+     
+     List<BigInteger> ret = new ArrayList<BigInteger>();
+     
+     for( String bn : base64.split(" ") ) {
+       ret.add( decode(bn) );
+     }
       
       
       return null;

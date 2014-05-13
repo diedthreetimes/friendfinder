@@ -283,6 +283,7 @@ public class DiscoveryService extends Service {
           return false;
         }
         catch (IOException e) {
+          Log.e(TAG, "Error downloading ", e);
           return false;
         } catch (JSONException e) {
           Log.e(TAG, "Authorization json can not be parsed", e);
@@ -567,7 +568,6 @@ public class DiscoveryService extends Service {
       @Override
       public void onComplete(Bundle values) {
         if(D) Log.d(TAG, "Authorization successful");
-        if(D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.LINKEDIN));
         
         downloadAll(new ProfileDownloadCallback () {
           @Override

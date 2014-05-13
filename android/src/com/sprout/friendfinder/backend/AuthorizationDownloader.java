@@ -23,29 +23,33 @@ public class AuthorizationDownloader {
   private static final String TAG = AuthorizationDownloader.class.getSimpleName();
   private static final boolean D = true;
   
-  public static AuthorizationObject download(Context context, String token, String verifier) throws ClientProtocolException, IOException, JSONException, CertificateException {
+  public static AuthorizationObject download(Context context, String token, String secret) throws ClientProtocolException, IOException, JSONException, CertificateException {
 
     
 
     DefaultHttpClient httpClient = new DefaultHttpClient();
     HttpGet httpGet = new HttpGet("http://"+host+"/authority/download_connections.json?" +
-    		"oauth_token=" + token +  // 75--86c42b15-e505-4c09-a35d-48ea4cf07934
-    		"&oauth_verifier=" + verifier // 79135
+    		"oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
+    		"&oauth_secret=" + secret // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
     		);
     
     if(D) Log.d(TAG, "Attempting a get of " + httpGet.getURI());
     
     HttpResponse httpResponse = httpClient.execute(httpGet);
-
+    
     BufferedReader bufReader = new BufferedReader(new InputStreamReader(httpResponse.getEntity().getContent()));
 
-
     StringBuffer buffer = new StringBuffer();
-    String line = "";
+    String line = bufReader.readLine();
 
-    while ((line = bufReader.readLine()) != null) {
+    Log.d(TAG, "Processing Response");
+    while (line != null) {
+      Log.d(TAG, line);
       buffer.append(line + "\n");
+      Log.d(TAG, "after append");
+      line = bufReader.readLine(); // TODO: Why is this not reading anymore
     }
+    Log.d(TAG, "DONE");
 
     String result = buffer.toString(); 
     bufReader.close(); 
