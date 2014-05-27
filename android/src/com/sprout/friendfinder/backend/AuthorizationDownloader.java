@@ -18,7 +18,7 @@ import com.sprout.friendfinder.crypto.AuthorizationObject;
 
 public class AuthorizationDownloader {
 
-  private static final String host = "creepyer.ics.uci.edu:3000";
+  private static final String host = "344ee97c.ngrok.com:80";
   
   private static final String TAG = AuthorizationDownloader.class.getSimpleName();
   private static final boolean D = true;
