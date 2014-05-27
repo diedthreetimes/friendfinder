@@ -31,6 +31,21 @@ class AuthorityController < ApplicationController
     end
   end
 
+  def test_connections
+    resp = {}
+
+    friends = 100.times.to_a
+
+    resp[:count] = friends.count
+    if !params[:include_connections].nil?
+      resp[:connections] = friends.collect{|x| "id " + x.to_s }
+    end
+
+    resp[:psi_message] = HbcPsi.sig_message(friends.collect{|x| x.to_s})
+
+    respond_with( resp )
+  end
+
   def download_connections
     with_log_in do |c|
       connections = c.connections[:all]
