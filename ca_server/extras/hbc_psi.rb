@@ -37,7 +37,12 @@ class HbcPsi
 
     sig = CA.sign(string_set)
     # Do we want to include the data in the signature? It seems that it's encoding is smaller
-    {signed_message: sig.to_pem, secret: encode( ru )}
+    # DEBUG PURPOSES ONLY
+    plaintext = set.collect do |x|
+      self.modpow(hash_str(x), ru, @@p).to_s(16)
+    end.join(' ')
+    {signed_message: sig.to_pem, secret: encode( ru ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+    # {signed_message: sig.to_pem, secret: encode( ru )}
 
   end
 
@@ -45,7 +50,10 @@ class HbcPsi
     # Radix 16 print the bn
     # Then convert to hex high nible first
     # Finally base64 encode
-    [[bn.to_s(16)].pack("H*")].pack("m")
+    hexstr = bn.to_s(16)
+
+    pad = (hexstr.size % 2 == 0) ? "" : "0"
+    [[pad + hexstr].pack("H*")].pack("m")
   end
 
   # Compute a^n mod m
