@@ -100,7 +100,9 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     for (int l = 0; l < T2.size(); l++) {
       for (int l2 = 0; l2 < T.size(); l2++) {
         if (T.get(l2).equals(T2.get(l))) {
-          result.add(input[l]);
+          if (l < input.length){ // TODO: Used only for benchmarking
+            result.add(input[l]);
+          }
         }
       }
     }
