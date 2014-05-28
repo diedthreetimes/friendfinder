@@ -227,8 +227,10 @@ public class SocialAuthDialog extends Dialog {
 	//  There may be other user actions which don't clal dismiss. I'm not sure.
 	//  There is probably a cleaner way of ensuring the spinner is dismissed
 	@Override public void dismiss() {
-	  if(mSpinner != null && mSpinner.isShowing()) {
-	    mSpinner.dismiss();
+	  synchronized(mSpinner) {
+	    if(mSpinner != null && mSpinner.isShowing()) {
+	      mSpinner.dismiss();
+	    }
 	  }
 	  super.dismiss();
 	}
@@ -263,8 +265,10 @@ public class SocialAuthDialog extends Dialog {
 								handler.post(new Runnable() {
 									@Override
 									public void run() {
-										if (mSpinner != null && mSpinner.isShowing())
-											mSpinner.dismiss();
+									  synchronized(mSpinner) {
+									    if (mSpinner != null && mSpinner.isShowing())
+									      mSpinner.dismiss();
+									  }
 
 										Bundle bundle = new Bundle();
 										bundle.putString(SocialAuthAdapter.PROVIDER, mProviderName.toString());
@@ -430,8 +434,10 @@ public class SocialAuthDialog extends Dialog {
 									@Override
 									public void run() {
 
-										if (mSpinner != null && mSpinner.isShowing())
-											mSpinner.dismiss();
+									  synchronized(mSpinner) {
+									    if (mSpinner != null && mSpinner.isShowing())
+									      mSpinner.dismiss();
+									  }
 
 										Bundle bundle = new Bundle();
 										bundle.putString(SocialAuthAdapter.PROVIDER, mProviderName.toString());
@@ -471,9 +477,11 @@ public class SocialAuthDialog extends Dialog {
 
 							mWebView.scrollTo(Util.UI_YAHOO_ALLOW, 0);
 						}
-						if(mSpinner != null && mSpinner.isShowing()) {
-				      mSpinner.dismiss();
-				    }
+						synchronized(mSpinner) {
+						  if(mSpinner != null && mSpinner.isShowing()) {
+						    mSpinner.dismiss();
+						  }
+						}
 					}
 
 					if (mProviderName.toString().equalsIgnoreCase("yammer")) {
@@ -500,9 +508,11 @@ public class SocialAuthDialog extends Dialog {
 			}
 
 			if (!mProviderName.toString().equalsIgnoreCase("yahoo")) {
-			  if(mSpinner != null && mSpinner.isShowing()) {
-		      mSpinner.dismiss();
-		    }
+			  synchronized (mSpinner) {
+			    if(mSpinner != null && mSpinner.isShowing()) {
+			      mSpinner.dismiss();
+			    }
+			  }
 			}
 		}
 
