@@ -55,9 +55,7 @@ public class AuthorizationObject implements Serializable {
   private X509Certificate cert;
 
   // The original order of the calculated input
-  // TODO: Mark this transient once the authorization is saved, and loaded from the database.
-  //private transient List<String> orderedInput;
-  private ArrayList<String> orderedInput;
+  private transient ArrayList<String> orderedInput;
 
   private static String defaultFilename = "authorization";
   private static String certFilename = "server_cert.crt"; // Pem should also work if needed
