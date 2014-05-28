@@ -38,7 +38,7 @@ class AuthorityController < ApplicationController
 
     resp[:count] = friends.count
     if !params[:include_connections].nil?
-      resp[:connections] = friends.collect{|x| "id " + x.to_s }
+      resp[:connections] = friends.collect{|x| x.to_s }
     end
 
     resp[:psi_message] = HbcPsi.sig_message(friends.collect{|x| x.to_s})
@@ -55,7 +55,7 @@ class AuthorityController < ApplicationController
       resp = {}
       resp[:count] = friends.count
       if !params[:include_connections].nil?
-        resp[:connections] = friends
+        resp[:connections] = friends.collect {|v| v[:id]}
         resp[:privates] = private_friends.count
       end
       #resp[:connections] = c.profile( id: friends.first["id"], fields: %w(positions) )
