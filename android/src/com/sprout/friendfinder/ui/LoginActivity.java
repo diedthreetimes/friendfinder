@@ -32,6 +32,7 @@ public class LoginActivity extends Activity {
         intent.setAction(DiscoveryService.ACTION_RESTART);
         startService(intent);
 
+        if(D) Log.d(TAG, "Finishing login activity");
         finish();
       }
 
