@@ -115,7 +115,7 @@ public class DiscoveryService extends Service {
   /* ***   Connections   *** */
   /***************************/
   private CommunicationService mMessageService;
-  private static boolean benchmarkBandwidth = true;
+  private static boolean benchmarkBandwidth = false;
 
   /***************************/
   /* *** Service Binders *** */
@@ -790,8 +790,9 @@ public class DiscoveryService extends Service {
       public void onComplete() {
         if(V) Log.i(TAG, "Common friend detection complete.");
       
-        // TODO: Commented out for test
-        //mDeviceCache.add(mRunningDevice);
+        if (!benchmarkBandwidth) {// overloaded for now
+	  mDeviceCache.add(mRunningDevice);
+        }
              
         // TODO: We need to save the history of this event 
         // We may also want to do something with the result, but for that we would need to modify the callback
