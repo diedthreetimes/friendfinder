@@ -50,7 +50,10 @@ class HbcPsi
     # Radix 16 print the bn
     # Then convert to hex high nible first
     # Finally base64 encode
-    [[bn.to_s(16)].pack("H*")].pack("m")
+    hexstr = bn.to_s(16)
+
+    pad = (hexstr.size % 2 == 0) ? "" : "0"
+    [[pad + hexstr].pack("H*")].pack("m")
   end
 
   # Compute a^n mod m
