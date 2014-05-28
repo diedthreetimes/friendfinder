@@ -58,7 +58,6 @@ import org.spongycastle.jce.provider.BouncyCastleProvider;
 // TODO: General
 //    Monitor INTERNET access state.
 //    Schedule sync events if Internet is not available (or just for periodic updates)
-//    Add timer for discovery
 
 
 public class DiscoveryService extends Service {
@@ -249,7 +248,7 @@ public class DiscoveryService extends Service {
       Log.e(TAG,"Could not logout. Are you logged in", e);
     }
 
-    // TODO: We need to also delete saved information her
+    // TODO: We need to also delete saved information here
   }
   
   // TODO: Eventually this may need to be more information.
