@@ -339,6 +339,11 @@ public class MainActivity extends Activity {
     public void syncnow(View view) {
       //TODO: Initate a request to the DiscoveryService to sync
       
+      Intent intent = new Intent(this, DiscoveryService.class);
+      intent.setAction(DiscoveryService.ACTION_SYNC);
+      startService(intent);
+      
+      // TODO: The bellow code won't have any affect. Instead we should update the UI in a callback
       sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
       Long lastSync = sharedPreference.getLong("lastSync", 0);
       Timestamp ts = new Timestamp(lastSync);

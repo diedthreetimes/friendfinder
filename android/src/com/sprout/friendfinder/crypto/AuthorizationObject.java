@@ -54,6 +54,11 @@ public class AuthorizationObject implements Serializable {
   
   private X509Certificate cert;
 
+  // The original order of the calculated input
+  // TODO: Mark this transient once the authorization is saved, and loaded from the database.
+  //private transient List<String> orderedInput;
+  private ArrayList<String> orderedInput;
+
   private static String defaultFilename = "authorization";
   private static String certFilename = "server_cert.crt"; // Pem should also work if needed
 
@@ -88,6 +93,18 @@ public class AuthorizationObject implements Serializable {
     auth = msg.getString("signed_message");
     R = decode( msg.getString("secret") );
     
+    if (jObject.has("connections")) {
+      JSONArray connections = jObject.getJSONArray("connections");
+      
+      if(D) Log.d(TAG, "Initializing orderedInput");
+      orderedInput = new ArrayList<String>();
+      
+      for (int i=0; i < connections.length(); i++ ) {
+        orderedInput.add( connections.getString(i) );
+      }
+    } else {
+      if(D) Log.d(TAG, "Connections not present in top level json");
+    }
   }
   
   private void loadCert(Context context) throws IOException, CertificateException {
@@ -159,11 +176,14 @@ public class AuthorizationObject implements Serializable {
       throws IOException {
     out.writeObject(this.R);
     out.writeObject(this.auth);
+    out.writeObject(this.orderedInput);
   }
 
+  @SuppressWarnings("unchecked")
   public AuthorizationObject readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
     this.R = (BigInteger) in.readObject();
     this.auth = (String) in.readObject();
+    this.orderedInput = (ArrayList<String>) in.readObject();
     return this;
   }
 
@@ -173,6 +193,10 @@ public class AuthorizationObject implements Serializable {
 
   public String getAuth() {
     return this.auth;
+  }
+  
+  public List<String> getOriginalOrder() {
+    return orderedInput;
   }
 
   public List<BigInteger> getData () {

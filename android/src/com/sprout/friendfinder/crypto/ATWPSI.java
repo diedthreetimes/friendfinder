@@ -33,7 +33,7 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     authObj = authObject;
   }
 
-  // TODO: Make this protocol threaded
+  // TODO: Make this protocol threaded. This is necessary for balanced security.
 
   @Override
   protected List<String> conductClientTest(CommunicationService s, String... input) {
@@ -97,11 +97,33 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     //output result set:
     List<String> result = new ArrayList<String>();
 
+    List<String> originalOrder = authObj.getOriginalOrder();
+    
+    if (originalOrder.size() != input.length) {
+      // This seems to be due to an issue with server downloading an improper number of connections from linkedIn.
+      // From what I can tell, it seems to be a bug on linkedIn's side. But it could be the linkedIn ruby client as well
+      Log.e(TAG, "Server authorization doesn't match provided input. Server: " + originalOrder.size() + ". Input: " + input.length);
+    }
+    
     for (int l = 0; l < T2.size(); l++) {
       for (int l2 = 0; l2 < T.size(); l2++) {
         if (T.get(l2).equals(T2.get(l))) {
-          if (l < input.length){ // TODO: Used only for benchmarking
-            result.add(input[l]);
+          // This is a strange side affect of not recomputing the hashes ourselves.
+          // Instead, we trust the CA to give us the order
+          if (originalOrder != null) {
+            if (l < originalOrder.size()) {
+              // We may want to verify that this is indeed one of our inputs
+              // We trust the server, so for now we don't bother
+              result.add(originalOrder.get(l));
+            } else {
+              Log.e(TAG, "Attempted ot access input form server out of range");
+            }
+          } else {
+            // Here we can fallback on recomputing the masked hashes from the original input and the secret
+            // TODO: 
+            
+            Log.e(TAG, "Recovery of inputs not implemented. Order must be supplied form the server. "
+                + "Perhaps the authorization could not be parsed?");
           }
         }
       }

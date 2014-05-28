@@ -30,7 +30,8 @@ public class AuthorizationDownloader {
     DefaultHttpClient httpClient = new DefaultHttpClient();
     HttpGet httpGet = new HttpGet("http://"+host+"/authority/download_connections.json?" +
     		"oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
-    		"&oauth_secret=" + secret // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
+    		"&oauth_secret=" + secret + // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
+    		"&include_connections=true"
     		);
     
     if(D) Log.d(TAG, "Attempting a get of " + httpGet.getURI());

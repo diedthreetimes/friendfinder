@@ -169,6 +169,8 @@ public class DiscoveryService extends Service {
     } else if (intent.getAction().equals(ACTION_STOP)) {
       stop();
     } else if (intent.getAction().equals(ACTION_SYNC)) {
+      // TODO: what if we are in the middle of a connection when this sync request starts.
+      // Will the transition be handled smoothly? Probably not.
       sync();
     } else if (intent.getAction().equals(ACTION_LOGOUT)) {
       logout();
@@ -477,7 +479,9 @@ public class DiscoveryService extends Service {
     // .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
     notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, sharedInputs);
     
-    PendingIntent pendingIntent = PendingIntent.getActivity( this, 0, notifyIntent, 0 );
+    // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
+    // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
+    PendingIntent pendingIntent = PendingIntent.getActivity( this, 10, notifyIntent, PendingIntent.FLAG_CANCEL_CURRENT );
 
     // Regular view
     b.setContentIntent(pendingIntent)
@@ -955,7 +959,13 @@ public class DiscoveryService extends Service {
 
         ArrayList<String> commonFriends = new ArrayList<String>();
         for (String id : result){
-          commonFriends.add(idToNameMap.get(id));
+          if (idToNameMap.get(id) == null) {
+            // This can only happen if the input sizes from the server and linkedin don't match
+            // Unfortunately, this is quite frequent
+            commonFriends.add("Hidden Name"); 
+          } else {
+            commonFriends.add(idToNameMap.get(id));
+          }
         }
         
         addNotification(commonFriends);
