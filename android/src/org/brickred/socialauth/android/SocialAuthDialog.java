@@ -70,6 +70,9 @@ import android.widget.TextView;
  * 
  */
 public class SocialAuthDialog extends Dialog {
+  
+  private static final String TAG = SocialAuthDialog.class.getSimpleName();
+  private static final boolean D = true;
 
 	// Variables
 	public static final int BLUE = 0xFF6D84B4;
@@ -156,8 +159,8 @@ public class SocialAuthDialog extends Dialog {
 			@Override
 			public void onCancel(DialogInterface dialogInterface) {
 				mWebView.stopLoading();
-				mListener.onBack();
 				SocialAuthDialog.this.dismiss();
+				mListener.onBack();
 			}
 		});
 
@@ -227,8 +230,11 @@ public class SocialAuthDialog extends Dialog {
 	//  There may be other user actions which don't clal dismiss. I'm not sure.
 	//  There is probably a cleaner way of ensuring the spinner is dismissed
 	@Override public void dismiss() {
-	  if(mSpinner != null && mSpinner.isShowing()) {
-	    mSpinner.dismiss();
+	  Log.d(TAG, "Dismiss called, attempting to hide the spinner");
+	  synchronized(mSpinner) {
+	    if(mSpinner != null && mSpinner.isShowing()) {
+	      mSpinner.dismiss();
+	    }
 	  }
 	  super.dismiss();
 	}
@@ -260,11 +266,15 @@ public class SocialAuthDialog extends Dialog {
 								AuthProvider auth = mSocialAuthManager.connect(params);
 								writeToken(auth);
 
+								// TODO: Is this possibly causing the leaked window?
 								handler.post(new Runnable() {
 									@Override
 									public void run() {
-										if (mSpinner != null && mSpinner.isShowing())
-											mSpinner.dismiss();
+									  Log.d("SocialAuthDialog", "Runnable called, attempting to dismiss spinner");
+									  synchronized(mSpinner) {
+									    if (mSpinner != null && mSpinner.isShowing())
+									      mSpinner.dismiss();
+									  }
 
 										Bundle bundle = new Bundle();
 										bundle.putString(SocialAuthAdapter.PROVIDER, mProviderName.toString());
@@ -273,6 +283,10 @@ public class SocialAuthDialog extends Dialog {
 								});
 							} catch (Exception e) {
 								e.printStackTrace();
+								synchronized(mSpinner) {
+                  if (mSpinner != null && mSpinner.isShowing())
+                    mSpinner.dismiss();
+                }
 								mListener.onError(new SocialAuthError("Unknown Error", e));
 							}
 						}
@@ -403,6 +417,9 @@ public class SocialAuthDialog extends Dialog {
 			}
 
 			Log.d("SocialAuth-WebView", "onPageStart:" + url);
+			Log.d(TAG, "Starting the spinner");
+			//TODO: Can this be done from the current thread?
+			// We may need to post a runnable here to show the spinner
 			mSpinner.show();
 
 			// For Linkedin, MySpace, Runkeeper - Calls onPageStart to
@@ -426,12 +443,16 @@ public class SocialAuthDialog extends Dialog {
 										|| !mProviderName.toString().equalsIgnoreCase("salesforce"))
 									writeToken(auth);
 
+								// TODO: 
+								Log.d(TAG, "Asynchronously attempting to turn off the spinner");
 								handler.post(new Runnable() {
 									@Override
 									public void run() {
-
-										if (mSpinner != null && mSpinner.isShowing())
-											mSpinner.dismiss();
+									  Log.d(TAG, "Spinner being dismissed from runnable");
+									  synchronized(mSpinner) {
+									    if (mSpinner != null && mSpinner.isShowing())
+									      mSpinner.dismiss();
+									  }
 
 										Bundle bundle = new Bundle();
 										bundle.putString(SocialAuthAdapter.PROVIDER, mProviderName.toString());
@@ -471,9 +492,11 @@ public class SocialAuthDialog extends Dialog {
 
 							mWebView.scrollTo(Util.UI_YAHOO_ALLOW, 0);
 						}
-						if(mSpinner != null && mSpinner.isShowing()) {
-				      mSpinner.dismiss();
-				    }
+						synchronized(mSpinner) {
+						  if(mSpinner != null && mSpinner.isShowing()) {
+						    mSpinner.dismiss();
+						  }
+						}
 					}
 
 					if (mProviderName.toString().equalsIgnoreCase("yammer")) {
@@ -500,9 +523,12 @@ public class SocialAuthDialog extends Dialog {
 			}
 
 			if (!mProviderName.toString().equalsIgnoreCase("yahoo")) {
-			  if(mSpinner != null && mSpinner.isShowing()) {
-		      mSpinner.dismiss();
-		    }
+			  Log.d("SocialAuthDialog", "Attempting to dismiss spinner");
+			  synchronized (mSpinner) {
+			    if(mSpinner != null && mSpinner.isShowing()) {
+			      mSpinner.dismiss();
+			    }
+			  }
 			}
 		}
 
@@ -573,6 +599,7 @@ public class SocialAuthDialog extends Dialog {
 				super.onWindowFocusChanged(hasWindowFocus);
 			} catch (NullPointerException e) {
 				// Catch null pointer exception
+			  Log.d("SocialAuthDialog", "Odd null pointer exception", e);
 			}
 		}
 	}

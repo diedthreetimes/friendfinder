@@ -1,7 +1,3 @@
-/*
- * Ron: The CA's public key (N, e), the random number Rc as well as the authorization of the set of contacts by CA are put into this object in order to store it on the user's device and read it later on (during offline phase) when the PSI shall be done
- */
-
 package com.sprout.friendfinder.crypto;
 
 import java.io.ByteArrayOutputStream;
@@ -36,6 +32,11 @@ import android.content.res.Resources;
 import android.util.Base64;
 import android.util.Log;
 
+/**
+ * This contains both the PKCS signature and generated secret, as well as the matching plaintext id's
+ * @author skyf
+ *
+ */
 public class AuthorizationObject implements Serializable {
   private static final long serialVersionUID = -8723688620635455716L;
 
