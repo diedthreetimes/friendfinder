@@ -1,49 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?><AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/AbsoluteLayout1"
     android:layout_width="fill_parent"
-    android:layout_height="fill_parent" >
-
-    <Space
-        android:layout_width="21dp"
-        android:layout_height="1dp" />
-
-    <Space
-        android:layout_width="1dp"
-        android:layout_height="58dp" />
-
-    <Space
-        android:layout_width="44dp"
-        android:layout_height="1dp" />
-
-    <Space
-        android:layout_width="152dp"
-        android:layout_height="1dp" />
-
-    <Space
-        android:layout_width="1dp"
-        android:layout_height="65dp" />
-
-    <Space
-        android:layout_width="1dp"
-        android:layout_height="236dp" />
-
-    <TextView
-        android:id="@+id/textView1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_x="11dp"
-        android:layout_y="16dp"
-        android:text="First connect to another device" />
-
-    <!--
-    <Button
-        android:id="@+id/connect_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_x="110dp"
-        android:layout_y="46dp"
-        android:text="Connect" /> -->
+    android:layout_height="fill_parent" > 
 
     <TextView
         android:id="@+id/textView2"
@@ -51,15 +9,7 @@
         android:layout_height="38dp"
         android:layout_x="15dp"
         android:layout_y="119dp"
-        android:text="Once connected, start searching for contacts in common" />
+        android:text="Your device is looking for others in the background." />
 
-    <!-- 
-    <Button
-        android:id="@+id/check_common_friends_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_x="119dp"
-        android:layout_y="171dp"
-        android:text="START" /> -->
 
 </AbsoluteLayout>

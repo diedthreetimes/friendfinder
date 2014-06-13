@@ -20,7 +20,7 @@ public class IntersectionResultsActivity extends ListActivity {
   protected void onCreate(Bundle savedInstanceState){
       super.onCreate(savedInstanceState);
 
-      // setContentView(R.layout.);
+      //setContentView(R.layout.intersection_result);
       
       if(getIntent() == null) {
         Log.e(TAG, "Null intent provided");

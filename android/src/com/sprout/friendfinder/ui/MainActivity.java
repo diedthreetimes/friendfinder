@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
 
     /*
     // TODO: Find a way to see if p2pwifi is supported
-    mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE);
+    mManager = (WifiP2pManager) getSystemService(Context.WIFI_P2P_SERVICE); 
     mChannel = mManager.initialize(this, getMainLooper(), null);
     mReceiver = new WiFiDirectBroadcastReceiver(mManager, mChannel, this);
     if (mManager == null) {
@@ -185,33 +185,33 @@ public class MainActivity extends Activity {
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
     case R.id.account:
-      setContentView(R.layout.account);
+      //setContentView(R.layout.account);
       // loadProfileFromFile();
 
-      TextView t = new TextView(this);
-      t = (TextView)findViewById(R.id.current_name);
-      t.setText("Temproarily Unavailable");
+      //TextView t = new TextView(this);
+      //t = (TextView)findViewById(R.id.current_name);
+      //t.setText("Temproarily Unavailable");
       // TODO: Possibly bind to the service? Or loadProfile should be a utility function
       // t.setText(myProfile.getFirstName() + " " + myProfile.getLastName());
 
       return true;
     case R.id.privacy:
-      setContentView(R.layout.privacy);
+      //setContentView(R.layout.privacy);
       return true;
     case R.id.synchronization:
-      setContentView(R.layout.synchronization);
+      //setContentView(R.layout.synchronization);
 
-      sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
-      Long lastSync = sharedPreference.getLong("lastSync", 0);
-      Timestamp ts = new Timestamp(lastSync);
+      //sharedPreference = PreferenceManager.getDefaultSharedPreferences(this);
+      //Long lastSync = sharedPreference.getLong("lastSync", 0);
+      //Timestamp ts = new Timestamp(lastSync);
 
-      TextView t2 = new TextView(this);
-      t2 = (TextView)findViewById(R.id.lastSyncText);
-      t2.setText(ts.toLocaleString()); 
+      //TextView t2 = new TextView(this);
+      //t2 = (TextView)findViewById(R.id.lastSyncText);
+      //t2.setText(ts.toLocaleString()); 
 
       return true;
     case R.id.connection:
-      setContentView(R.layout.connection);
+      //setContentView(R.layout.connection);
       return true;
     default: return super.onOptionsItemSelected(item);
     }
@@ -348,13 +348,13 @@ public class MainActivity extends Activity {
       Long lastSync = sharedPreference.getLong("lastSync", 0);
       Timestamp ts = new Timestamp(lastSync);
 
-      TextView t2 = new TextView(this);
-      t2 = (TextView)findViewById(R.id.lastSyncText);
-      t2.setText(ts.toLocaleString());
+      //TextView t2 = new TextView(this);
+      //t2 = (TextView)findViewById(R.id.lastSyncText);
+      //t2.setText(ts.toLocaleString());
     }
 
     public void backtomain(View view) {
-      setContentView(R.layout.main);
+      //setContentView(R.layout.main);
     }
 
 

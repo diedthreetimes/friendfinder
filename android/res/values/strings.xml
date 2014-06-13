@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Friend Finder</string>
-
-    <string name="Send">btn_send</string>
-
-    <string name="btn_send">Send</string>
-
-    <string name="btn_contacts">List Contacts</string>
-    <string name="yesString">YES</string>
-    <string name="noString">NO</string>
-
+    <string name="app_name">Unlinked</string>
 </resources>

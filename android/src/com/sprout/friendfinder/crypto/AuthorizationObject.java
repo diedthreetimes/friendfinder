@@ -52,6 +52,8 @@ public class AuthorizationObject implements Serializable {
   private BigInteger R;
   private String auth;
   
+  private transient String authIdentity;
+  
   private X509Certificate cert;
 
   // The original order of the calculated input
@@ -102,6 +104,12 @@ public class AuthorizationObject implements Serializable {
       }
     } else {
       if(D) Log.d(TAG, "Connections not present in top level json");
+    }
+    
+    if (jObject.has("signed_identity")) {
+      authIdentity = jObject.getString("signed_identity");
+    } else {
+      if(D) Log.d(TAG, "Signed identity not present.");
     }
   }
   
@@ -175,6 +183,7 @@ public class AuthorizationObject implements Serializable {
     out.writeObject(this.R);
     out.writeObject(this.auth);
     out.writeObject(this.orderedInput);
+    out.writeObject(this.authIdentity);
   }
 
   @SuppressWarnings("unchecked")
@@ -182,6 +191,7 @@ public class AuthorizationObject implements Serializable {
     this.R = (BigInteger) in.readObject();
     this.auth = (String) in.readObject();
     this.orderedInput = (ArrayList<String>) in.readObject();
+    this.authIdentity = (String) in.readObject();
     return this;
   }
 
@@ -232,6 +242,10 @@ public class AuthorizationObject implements Serializable {
       Log.e(TAG, "Error processing content" , e);
       return null;
     }
+  }
+  
+  public String getIdentity() {
+    return authIdentity;
   }
   
   /**
