@@ -46,14 +46,13 @@ import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.R;
+import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.social.ContactsListObject;
 import com.sprout.friendfinder.social.ProfileObject;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
-
-import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 // TODO: General
 //    Monitor INTERNET access state.
@@ -114,7 +113,7 @@ public class DiscoveryService extends Service {
   /* ***   Connections   *** */
   /***************************/
   private CommunicationService mMessageService;
-  private static boolean benchmarkBandwidth = false;
+  private static boolean benchmarkBandwidth = Config.getBenchmark();
 
   /***************************/
   /* *** Service Binders *** */
@@ -156,7 +155,7 @@ public class DiscoveryService extends Service {
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
     if(L) Log.i(TAG, "Received start id " + startId + ": " + intent);
-
+    
     // We assume that any system restarts, are equivalent to an ACTION_RESTART
     if (intent == null || intent.getAction() == null || intent.getAction().equals(ACTION_START)) {
       // If we are not in the stop state we should probably just do nothing, we've already been started
@@ -794,7 +793,7 @@ public class DiscoveryService extends Service {
         if(V) Log.i(TAG, "Common friend detection complete.");
       
         if (!benchmarkBandwidth) {// overloaded for now
-	  mDeviceCache.add(mRunningDevice);
+          mDeviceCache.add(mRunningDevice);
         }
              
         // TODO: We need to save the history of this event 
@@ -925,6 +924,8 @@ public class DiscoveryService extends Service {
         super(s, authObject);
         
         this.callback = callback;
+        
+        setBenchmark(Config.getBenchmark());
       }
       
       @Override

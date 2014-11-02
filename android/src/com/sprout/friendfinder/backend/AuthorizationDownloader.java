@@ -14,23 +14,20 @@ import org.json.JSONException;
 import android.content.Context;
 import android.util.Log;
 
+import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 
 public class AuthorizationDownloader {
 
-  //private static final String host = "344ee97c.ngrok.com:80";
-  private static final String host = "creepyer.ics.uci.edu:3001";
-  
   private static final String TAG = AuthorizationDownloader.class.getSimpleName();
   private static final boolean D = true;
   
-  public static AuthorizationObject download(Context context, String token, String secret) throws ClientProtocolException, IOException, JSONException, CertificateException {
-
-    
+  public static AuthorizationObject download(Context context, String token, String secret)
+      throws ClientProtocolException, IOException, JSONException, CertificateException {
 
     DefaultHttpClient httpClient = new DefaultHttpClient();
-    HttpGet httpGet = new HttpGet("http://"+host+"/authority/download_connections.json?" +
-    		"oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
+    HttpGet httpGet = new HttpGet("http://"+Config.getHost()+Config.getContactJsonUrl() +
+    		"?oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
     		"&oauth_secret=" + secret + // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
     		"&include_connections=true"
     		);

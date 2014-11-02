@@ -45,6 +45,10 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
   protected List<String> conductServerTest(CommunicationService s, String... input) {
 
     Log.d(TAG, "STARTING TEST");
+    
+    if (benchmark) {
+      onlineWatch.start();
+    }
 
     //keep track of state the PSI protocol currently is in
     BigInteger Ra;
@@ -130,6 +134,10 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     }
 
     Log.d(TAG, "Found " + result.size() + " common inputs");
+    
+    if (benchmark) {
+      onlineWatch.pause();
+    }
 
     return result;
   }
