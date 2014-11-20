@@ -1,13 +1,12 @@
 package com.sprout.friendfinder.backend;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.lang.ref.WeakReference;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -49,8 +48,9 @@ import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
-import com.sprout.friendfinder.social.ContactsListObject;
-import com.sprout.friendfinder.social.ProfileObject;
+import com.sprout.friendfinder.models.ContactsListObject;
+import com.sprout.friendfinder.models.Interaction;
+import com.sprout.friendfinder.models.ProfileObject;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
 
@@ -77,6 +77,11 @@ public class DiscoveryService extends Service {
   public static final String ACTION_STOP = "action_stop";
   public static final String ACTION_SYNC = "action_sync";
   public static final String ACTION_LOGOUT = "action_logout";
+  
+  /***************************/
+  /* ***   Preferences   *** */
+  /***************************/
+  public static final String PROFILE_ID_PREF = "profile_id";
 
   /***************************/
   /* ***    STATES       *** */
@@ -252,8 +257,6 @@ public class DiscoveryService extends Service {
     // TODO: We need to also delete saved information here
   }
   
-  // TODO: Eventually this may need to be more information.
-  // Perhaps it could all be encompassed into a single Profile
   ProfileObject mProfile;
   List<ProfileObject> mContactList;
   AuthorizationObject mAuthObj; 
@@ -267,14 +270,20 @@ public class DiscoveryService extends Service {
         // Download the profile
         try {
           // Querying synchronously is a bit cleaner, but we could get some speedup, by querying asynchrnously.
-          // (One thread per download)
-          new ProfileObject(adapter.getUserProfile()).save(DiscoveryService.this);
-        
-        
-          new ContactsListObject(adapter.getContactList()).save(DiscoveryService.this);
+          // (One thread/task per download)
+          ProfileObject prof = new ProfileObject(adapter.getUserProfile());
+          ContactsListObject cont = new ContactsListObject(adapter.getContactList());
+          prof.setContacts(cont);
+          cont.save();
+          prof.save();
+          
+          SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+          if (!prefs.edit().putLong(PROFILE_ID_PREF, prof.getId()).commit()) {
+            Log.d(TAG, "Write profile id to preferences failed");
+          }
           
           AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
-          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret()).save(DiscoveryService.this);
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret()).save();
           
           if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
@@ -292,8 +301,6 @@ public class DiscoveryService extends Service {
           return false;
         }
         
-        
-      
         return true;
       }
       
@@ -305,101 +312,54 @@ public class DiscoveryService extends Service {
           callback.onComplete();
         }
       }
-      
- 
-      
+        
     }.execute();
     
   }
 
-  public ProfileObject loadProfileFromFile() {  
-    //load it into object that can be used later on
-
-    ProfileObject myProfile = new ProfileObject();
-
-    String filename = "profile";
-
-    FileInputStream fileInput;
-    ObjectInputStream objectInput; 
-
-    try {
-      fileInput = this.openFileInput(filename);
-      objectInput = new ObjectInputStream(fileInput);
-      myProfile.readObject(objectInput);
-      objectInput.close();
-      Log.d(TAG, "Profile loaded");
-      Log.d(TAG, "Name: " + myProfile.getFirstName() + " " + myProfile.getLastName());
-      
-      return myProfile;
-    } catch (Exception e) {
-      Log.d(TAG, "File has not been downloaded yet");
-      
-      return null;
+  // TODO: Rename, and consider using memoization
+  public ProfileObject loadProfileFromFile() {
+    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+    
+    ProfileObject profile = ProfileObject.load(ProfileObject.class, prefs.getLong(PROFILE_ID_PREF, -1));
+    if (profile == null) {
+      if(prefs.getLong(PROFILE_ID_PREF, -1) == -1) {
+        Log.e(TAG, "No profile downloaded");
+      } else {
+        Log.e(TAG, "Profile id cannot be found " + prefs.getLong(PROFILE_ID_PREF, -1));
+      }
     }
+    
+    return profile;
   } 
 
+  // TODO: Rename and reconsider structure of how these are stored.
+  //  (i.e. rely on memoization so we don't need to save, and then load immediately), of course after testing
   public List<ProfileObject> loadContactsFromFile() {
-    //load it into object that can be used later on
-
-    ContactsListObject contactListObject = new ContactsListObject();
-    List<ProfileObject> contactList = null;
-
-    String filename = "contacts";
-
-    FileInputStream fileInput;
-    ObjectInputStream objectInput; 
-
-    try {
-      fileInput = this.openFileInput(filename);
-      objectInput = new ObjectInputStream(fileInput);
-      contactListObject.readObject(objectInput);
-      contactList = contactListObject.getContactList();
-      objectInput.close();
-      Log.d(TAG, "Contacts loaded");
-      
-      return contactList;
-
-      //Toast.makeText(this, "Your " + contactList.size() + " offline contacts have been loaded", Toast.LENGTH_SHORT).show();
-    } catch (Exception e) {
-      Log.d(TAG, "File has not been downloaded so far");
-      
+    ProfileObject profile = loadProfileFromFile();
+    if (profile == null) {
+      Log.d(TAG, "Profile not found, can't retrieve contacts");
       return null;
     }
+    
+    return profile.contacts().getContactList();
   }
 
+  // TODO: Rename
   public AuthorizationObject loadAuthorizationFromFile() {
-    AuthorizationObject authObj;
     try {
-      authObj = new AuthorizationObject(this);
+      return AuthorizationObject.getAvailableAuth(this);
     } catch (Exception e) {
       Log.e(TAG, "Certificate could not be laoded. ", e);
       return null;
     }
-    String filename = "authorization";
-    FileInputStream fileInput;
-    ObjectInputStream objectInput; 
-
-    try {
-      fileInput = this.openFileInput(filename);
-      objectInput = new ObjectInputStream(fileInput);
-      authObj.readObject(objectInput);
-      objectInput.close();
-      Log.d(TAG, "Authorization loaded");
-
-      return authObj;
-
-    } catch (Exception e) {
-      Log.d(TAG, "Authorization has not been granted so far");
-      Toast.makeText(this, "You need to get a certification for your friends first", Toast.LENGTH_SHORT).show();
-      return null;
-    }
   }
   
-
   // Operations on the profile
   private void checkCommonFriends(
       List<ProfileObject> contactList, 
       AuthorizationObject authobj,
+      Interaction interaction,
       ProfileDownloadCallback callback) {
     //assume established communication channel with peer 
 
@@ -408,17 +368,14 @@ public class DiscoveryService extends Service {
       return;
     }
 
-
     String[] input = new String[contactList.size()];
     for( int i=0; i < contactList.size(); i++) {
-      input[i] = contactList.get(i).getId();
+      input[i] = contactList.get(i).getUid();
     }
 
     // This is really weird. Perhaps we should just inline the CommonFriendsTest, it might make more sense.
     // I also really don't like the use of callback here, but it works for now
-    (new CommonFriendsTest(mMessageService, authobj, callback)).execute(input);
-    
-
+    (new CommonFriendsTest(mMessageService, authobj, callback, interaction)).execute(input);
   }
   
   /*****************************/
@@ -785,7 +742,13 @@ public class DiscoveryService extends Service {
     setState(STATE_CONNECTED);
     
     if(D) Log.i(TAG, "Connected, attempting to check for common friends");
-    checkCommonFriends(mContactList, mAuthObj, new ProfileDownloadCallback() {
+    final Interaction interaction = new Interaction();
+    interaction.address = mRunningDevice.getAddress();
+    interaction.timestamp = Calendar.getInstance();
+    // TODO: We also want to set the interaction's public key but this isn't very important atm.
+    //   eventually this needs to happen in the crypto protocol
+    
+    checkCommonFriends(mContactList, mAuthObj, interaction, new ProfileDownloadCallback() {
 
       // After this protocol completes, we enter the ready state
       @Override
@@ -794,11 +757,10 @@ public class DiscoveryService extends Service {
       
         if (!benchmarkBandwidth) {// overloaded for now
           mDeviceCache.add(mRunningDevice);
-        }
-             
-        // TODO: We need to save the history of this event 
-        // We may also want to do something with the result, but for that we would need to modify the callback
-        // It may be a case for removing the callback completely.  
+        } 
+        
+        interaction.failed = false;
+        interaction.save();
         run();
       }
 
@@ -806,7 +768,10 @@ public class DiscoveryService extends Service {
       public void onError() {
         if(D) Log.i(TAG, "Error occured connecting to [device]");
         
-        // TODO: we should incremembt device's failed counter
+        interaction.failed = true;
+        interaction.save();
+        
+        // TODO: we should increment device's failed counter
         // If it is less than maximum retry attempts we should try again (possibly on next discovery)
         // We also need to clear any state that we have saved due to contact with device
         // For now, we simply do nothing.
@@ -872,11 +837,7 @@ public class DiscoveryService extends Service {
 
         Toast.makeText(target.getApplicationContext(), "Message read " 
             + readMessage, Toast.LENGTH_SHORT).show();
-
         break;
-
-
-
       case CommunicationService.MESSAGE_DEVICE:
         target.mRunningDevice = (Device) msg.getData().getSerializable(CommunicationService.DEVICE);
         break;            
@@ -886,7 +847,6 @@ public class DiscoveryService extends Service {
         break;
       case CommunicationService.MESSAGE_FAILED:
         // When a message fails we assume we need to reset
-        
         Log.e(TAG, "Message failed");
 
         // TODO: Perform a reset (remove the peer, etc)
@@ -900,7 +860,6 @@ public class DiscoveryService extends Service {
           target.initialize();
         }
         break;
-
       }
     }};
 
@@ -913,18 +872,19 @@ public class DiscoveryService extends Service {
     /*****************************/
     /* ** Protocol Callbacks *** */
     /*****************************/
-
-
+    
     // This extends AsyncTask, and thus we provide the UI specific methods here
     private class CommonFriendsTest extends ATWPSI {
       
       ProfileDownloadCallback callback;
+      Interaction interaction;
 
-      public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject, ProfileDownloadCallback callback) {
+      public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject, ProfileDownloadCallback callback, Interaction interaction) {
         super(s, authObject);
         
         this.callback = callback;
-        
+        this.interaction = interaction;
+
         setBenchmark(Config.getBenchmark());
       }
       
@@ -955,8 +915,10 @@ public class DiscoveryService extends Service {
         // TODO: This is a strange place to do this, it would make more sense wrapped in a contact list object.
         HashMap<String, String> idToNameMap = new HashMap<String, String>();
         for (ProfileObject prof : mContactList) {
-          idToNameMap.put( prof.getId(), prof.getDisplayName());
+          idToNameMap.put( prof.getUid(), prof.getDisplayName());
         }
+        
+        ContactsListObject contacts = new ContactsListObject();
 
         ArrayList<String> commonFriends = new ArrayList<String>();
         for (String id : result){
@@ -967,13 +929,16 @@ public class DiscoveryService extends Service {
           } else {
             commonFriends.add(idToNameMap.get(id));
           }
+          
+          contacts.put(id);
         }
+        
+        interaction.sharedContacts = contacts;
         
         addNotification(commonFriends);
          
         callback.onComplete();
       }
-
     }
     
     /*****************************/
@@ -987,5 +952,4 @@ public class DiscoveryService extends Service {
       public void onComplete();
       public void onError();
     }
-
 }

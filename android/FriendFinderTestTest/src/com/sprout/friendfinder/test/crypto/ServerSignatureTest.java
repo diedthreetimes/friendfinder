@@ -16,7 +16,6 @@ import org.spongycastle.openssl.PEMParser;
 
 import android.util.Base64;
 
-//TODO: DELETE: DO NOT ADD TO REPO. 
 public class ServerSignatureTest extends TestCase {
 
   public void testDecode() {

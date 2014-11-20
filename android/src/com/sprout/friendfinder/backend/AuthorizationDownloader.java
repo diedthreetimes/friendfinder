@@ -44,14 +44,13 @@ public class AuthorizationDownloader {
     if(D) Log.d(TAG, "Processing Response");
     while (line != null) {
       buffer.append(line + "\n");
-      line = bufReader.readLine(); // TODO: Why is this not reading anymore
+      line = bufReader.readLine();
     }
 
     String result = buffer.toString(); 
     bufReader.close(); 
     
     return new AuthorizationObject(context, result);
-
   }
 
 }

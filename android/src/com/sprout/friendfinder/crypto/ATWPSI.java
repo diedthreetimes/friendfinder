@@ -85,6 +85,7 @@ public class ATWPSI extends AbstractPSIProtocol<String, Void, List<String>> {
     T = new ArrayList<BigInteger>();
     for (BigInteger t1i : peerSet) {
       t1i = t1i.modPow(Ra, p);
+
       T.add(t1i);
 
       s.write(t1i);
