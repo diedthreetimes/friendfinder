@@ -1,7 +1,6 @@
 package com.sprout.friendfinder.models;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -104,23 +103,4 @@ public class ContactsListObject extends Model implements Serializable {
 	// None of these TODOs are immediately needed, but add functionality that could be useful in the future
 	// TODO: implement dependent save
 	// TODO: Implement get owningProfile (whose contact list is this) (this should be a lookup through profile)
-	
-  /* These are unused, but left in order to make use of the serialization api at a later date
-   *       To do this we need to change the signatures to private
-	public void writeObject(java.io.ObjectOutputStream out)
-		       throws IOException {
-		out.writeObject(this);
-	}
-
-	@SuppressWarnings("unchecked")
-	public void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-
-	  profiles.clear();
-
-	  for( ProfileObject obj : (List<ProfileObject>) in.readObject() ) {
-	    profiles.add(obj);
-	  }
-	  
-	  
-	} */
 }

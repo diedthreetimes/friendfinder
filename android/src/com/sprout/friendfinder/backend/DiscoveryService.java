@@ -912,13 +912,14 @@ public class DiscoveryService extends Service {
           return;
         }
 
-        // TODO: This is a strange place to do this, it would make more sense wrapped in a contact list object.
+        // TODO: This is a strange place to do this, it would make more sense wrapped in the contact list object.
         HashMap<String, String> idToNameMap = new HashMap<String, String>();
         for (ProfileObject prof : mContactList) {
           idToNameMap.put( prof.getUid(), prof.getDisplayName());
         }
         
         ContactsListObject contacts = new ContactsListObject();
+        contacts.save();
 
         ArrayList<String> commonFriends = new ArrayList<String>();
         for (String id : result){
