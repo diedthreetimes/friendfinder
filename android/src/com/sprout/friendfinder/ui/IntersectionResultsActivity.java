@@ -8,6 +8,7 @@ import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.ProfileObject;
 
 import android.app.ListActivity;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -63,7 +64,7 @@ public class IntersectionResultsActivity extends ListActivity {
           }
               
           txt.setText(rowItem.getDisplayName());
-          
+          txt.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_profile_image, 0, 0, 0);
           // Set the image asynchronously
           new AsyncTask<ProfileObject, Void, Drawable>() {
             @Override
@@ -79,9 +80,11 @@ public class IntersectionResultsActivity extends ListActivity {
             
             @Override
             protected void onPostExecute(Drawable image) {
+              float density = getResources().getDisplayMetrics().density;
               if (image != null) {
-                image.setBounds(0, 0, 64, 64);
-                txt.setCompoundDrawablesWithIntrinsicBounds(image, null, null, null);
+                image.setBounds(new Rect(0,0,(int)(68*density),(int)(68*density)));
+                txt.setCompoundDrawables(image, null, null, null);
+                //txt.setCompoundDrawablesWithIntrinsicBounds(image, null, null, null);
               }
             }
           }.execute(rowItem);

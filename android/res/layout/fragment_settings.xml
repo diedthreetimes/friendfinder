@@ -7,6 +7,10 @@
             android:key="@string/pref_launch_result_key"
             android:title="@string/pref_launch_result_title"
             android:summary="@string/pref_launch_result_summary"/>
+        <Preference
+            android:key="@string/pref_launch_contacts_key"
+            android:title="@string/pref_launch_contacts_title"
+            android:summary="@string/pref_launch_contacts_summary"/>
     </PreferenceCategory>
 
 </PreferenceScreen>

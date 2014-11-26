@@ -14,7 +14,6 @@ import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
 
 import com.activeandroid.Model;
 import com.activeandroid.annotation.Column;
@@ -164,8 +163,6 @@ public class ProfileObject extends Model implements Serializable {
     // Eventually we !need! To cache these!
     // TODO: Load these images form a cache (if not in the cache and disconnected display the default icon)
     // http://developer.android.com/training/efficient-downloads/redundant_redundant.html
-    
-    Log.e("ProfileObject", "Picture url" + getProfileImageURL());
     
     HttpURLConnection connection = (HttpURLConnection) new URL(getProfileImageURL()).openConnection();
     connection.connect();
