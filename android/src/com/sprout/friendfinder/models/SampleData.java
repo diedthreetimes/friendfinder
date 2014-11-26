@@ -1,6 +1,7 @@
 package com.sprout.friendfinder.models;
 
 import java.util.Calendar;
+import java.util.Random;
 
 import org.brickred.socialauth.Profile;
 
@@ -8,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 import android.widget.Toast;
 
 import com.sprout.friendfinder.backend.DiscoveryService;
@@ -21,10 +21,10 @@ public class SampleData {
     ContactsListObject clo = new ContactsListObject();
     clo.save();
     
-    for (int i=0; i < 10; i++) {
+    for (int i=0; i < new Random().nextInt(20) ; i++) {
       Profile p = new Profile();
       p.setEmail("me"+i+"@example.com");
-      p.setFirstName("First " + i);
+      p.setFirstName("First ");
       p.setLastName("Last " + i);
       p.setProfileImageURL("https://media.licdn.com/mpr/mpr/shrink_200_200/p/4/000/181/379/22152ef.jpg");
       p.setValidatedId("12340"+i);

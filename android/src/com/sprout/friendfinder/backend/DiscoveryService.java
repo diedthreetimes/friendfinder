@@ -75,6 +75,7 @@ public class DiscoveryService extends Service {
   public static final String ACTION_STOP = "action_stop";
   public static final String ACTION_SYNC = "action_sync";
   public static final String ACTION_LOGOUT = "action_logout";
+  public static final String ACTION_RESET_CACHE = "action_cache";
   
   /***************************/
   /* ***   Preferences   *** */
@@ -176,9 +177,12 @@ public class DiscoveryService extends Service {
       sync();
     } else if (intent.getAction().equals(ACTION_LOGOUT)) {
       logout();
+    } else if (intent.getAction().equals(ACTION_RESET_CACHE)) {
+      mDeviceCache.clear();
     }
 
     // This is useful to ensure that our service stays alive. 
+    // TODO: We may only want to return this for start requests
     return START_REDELIVER_INTENT;
   }
 

@@ -11,6 +11,14 @@
             android:key="@string/pref_launch_contacts_key"
             android:title="@string/pref_launch_contacts_title"
             android:summary="@string/pref_launch_contacts_summary"/>
+        <Preference
+            android:key="@string/pref_clear_cache_key"
+            android:title="@string/pref_clear_cache_title"
+            android:summary="@string/pref_clear_cache_summary"/>
+        <Preference
+            android:key="@string/pref_clear_interactions_key"
+            android:title="@string/pref_clear_interactions_title"
+            android:summary="@string/pref_clear_interactions_summary"/>
     </PreferenceCategory>
 
 </PreferenceScreen>
