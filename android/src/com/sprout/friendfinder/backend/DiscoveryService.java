@@ -179,6 +179,7 @@ public class DiscoveryService extends Service {
       logout();
     } else if (intent.getAction().equals(ACTION_RESET_CACHE)) {
       mDeviceCache.clear();
+      lastDiscovery = 0;
     }
 
     // This is useful to ensure that our service stays alive. 

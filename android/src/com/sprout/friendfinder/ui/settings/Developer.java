@@ -19,6 +19,8 @@ public class Developer {
     setupLaunchContactsActivity(fragment);
     setupClearCache(fragment);
     setupClearInteractions(fragment);
+    
+    // TODO: put syncnow somewhere
   }
   
   private static void setupClearInteractions(final PreferenceFragment fragment) {
@@ -28,7 +30,7 @@ public class Developer {
     launch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
       @Override
       public boolean onPreferenceClick(Preference preference) {
-        SQLiteUtils.execSql("truncate interactions");
+        SQLiteUtils.execSql("delete from interactions;");
         return true;
       }
     });

@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -30,12 +31,13 @@ public class IntersectionResultsActivity extends ListActivity {
   protected void onCreate(Bundle savedInstanceState){
       super.onCreate(savedInstanceState);
 
-      //setContentView(R.layout.intersection_result);
-      
       if(getIntent() == null) {
         Log.e(TAG, "Null intent provided");
         finish();
       }
+      
+      getActionBar().setDisplayHomeAsUpEnabled(true);
+      getActionBar().setHomeButtonEnabled(true);
 
       long id = getIntent().getLongExtra(EXTRA_DISPLAY, -1);
       ContactsListObject contacts = ContactsListObject.load(ContactsListObject.class, id);
@@ -96,5 +98,16 @@ public class IntersectionResultsActivity extends ListActivity {
 
       // Bind to our new adapter.
       setListAdapter(adapter);
+  }
+  
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    switch (item.getItemId()) {
+    case android.R.id.home:
+      onBackPressed();
+      return true;
+    default:
+      return super.onOptionsItemSelected(item);
+    }
   }
 }

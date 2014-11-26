@@ -4,6 +4,13 @@
     <string name="app_name">Unlinked</string>
     <string name="menu_settings">Settings</string>
     
+    <!-- Contact Layout Strings -->
+    <string name="profile_image_desc">Profile Image</string>
+    <string name="ic_identity_desc">Exchange Identities</string>
+    <string name="ic_messaging_desc">Start Messaging</string>
+    <string name="number_of_contacts">%1$d common contacts</string>
+    <string name="anonomous_name">Anonomous</string>
+    
     <!--  Preference Developer values -->
     <string name="pref_developer_title">Developer Settings</string>
     <string name="pref_launch_result_key">pref_launch_result</string>
