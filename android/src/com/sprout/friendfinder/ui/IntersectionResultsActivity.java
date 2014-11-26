@@ -1,13 +1,22 @@
 package com.sprout.friendfinder.ui;
 
+import java.io.IOException;
 import java.util.List;
 
 import com.sprout.friendfinder.R;
+import com.sprout.friendfinder.models.ContactsListObject;
+import com.sprout.friendfinder.models.ProfileObject;
 
 import android.app.ListActivity;
+import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.TextView;
 
 public class IntersectionResultsActivity extends ListActivity {
 
@@ -26,12 +35,61 @@ public class IntersectionResultsActivity extends ListActivity {
         Log.e(TAG, "Null intent provided");
         finish();
       }
+
+      long id = getIntent().getLongExtra(EXTRA_DISPLAY, -1);
+      ContactsListObject contacts = ContactsListObject.load(ContactsListObject.class, id);
       
-      @SuppressWarnings("unchecked")
-      List<String> toDisp = (List<String>) getIntent().getSerializableExtra(EXTRA_DISPLAY);
+      if (contacts == null) {
+        Log.e(TAG, "Contacts object not found for " + id);
+        finish();
+      }
+      List<ProfileObject> toDisp =  contacts.getContactList();
         
 
-      ArrayAdapter<String> adapter =  new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, toDisp);
+      ArrayAdapter<ProfileObject> adapter =  new ArrayAdapter<ProfileObject>(this, -1, toDisp) {
+        
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+          ProfileObject rowItem = getItem(position);
+
+          // Since we just have one view this tagging like this is probably not necessary
+          final TextView txt;
+          if (convertView == null) {
+            convertView = LayoutInflater.from(this.getContext()).inflate(R.layout.contact_layout, null);
+            txt = (TextView) convertView.findViewById(R.id.displayName);
+            convertView.setTag(txt);
+          } else {
+            txt = (TextView) convertView.getTag();
+          }
+              
+          txt.setText(rowItem.getDisplayName());
+          
+          // Set the image asynchronously
+          new AsyncTask<ProfileObject, Void, Drawable>() {
+            @Override
+            protected Drawable doInBackground(ProfileObject... params) {
+              ProfileObject prof = params[0];
+              try {
+                return prof.getProfileImage(getContext());
+              } catch(IOException e) {
+                Log.d(TAG, "Unable to load profile image");
+                return null;
+              }
+            }
+            
+            @Override
+            protected void onPostExecute(Drawable image) {
+              if (image != null) {
+                image.setBounds(0, 0, 64, 64);
+                txt.setCompoundDrawablesWithIntrinsicBounds(image, null, null, null);
+              }
+            }
+          }.execute(rowItem);
+          
+
+          return convertView;
+        }
+      };
 
       // Bind to our new adapter.
       setListAdapter(adapter);

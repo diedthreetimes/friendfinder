@@ -2,4 +2,11 @@
 <resources>
 
     <string name="app_name">Unlinked</string>
+    <string name="menu_settings">Settings</string>
+    
+    <!--  Preference Developer values -->
+    <string name="pref_developer_title">Developer Settings</string>
+    <string name="pref_launch_result_key">pref_launch_result</string>
+    <string name="pref_launch_result_title">Launch Contact Result</string>
+    <string name="pref_launch_result_summary">See an example contact result.</string>
 </resources>

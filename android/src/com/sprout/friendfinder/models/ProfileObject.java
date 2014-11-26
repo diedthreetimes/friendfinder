@@ -1,10 +1,20 @@
 package com.sprout.friendfinder.models;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 
 import org.brickred.socialauth.Contact;
 import org.brickred.socialauth.Profile;
+
+import android.content.Context;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.util.Log;
 
 import com.activeandroid.Model;
 import com.activeandroid.annotation.Column;
@@ -147,5 +157,21 @@ public class ProfileObject extends Model implements Serializable {
 	public int hashCode() {
 	  return getUid().hashCode();
 	}
+
+	// Note this shouldn't be called on the main thread.
+  public Drawable getProfileImage(Context context) throws IOException {
+    // For now just convert the URL to a drawable
+    // Eventually we !need! To cache these!
+    // TODO: Load these images form a cache (if not in the cache and disconnected display the default icon)
+    // http://developer.android.com/training/efficient-downloads/redundant_redundant.html
+    
+    Log.e("ProfileObject", "Picture url" + getProfileImageURL());
+    
+    HttpURLConnection connection = (HttpURLConnection) new URL(getProfileImageURL()).openConnection();
+    connection.connect();
+    InputStream input = connection.getInputStream();
+
+    return new BitmapDrawable(context.getResources(), BitmapFactory.decodeStream(input));
+  }
 
 }

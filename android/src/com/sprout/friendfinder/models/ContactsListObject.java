@@ -97,6 +97,7 @@ public class ContactsListObject extends Model implements Serializable {
 	   .from(ProfileObject.class)
 	   .innerJoin(ContactsListsProfiles.class).on("profiles.id = contacts_lists_profiles.contact")
 	   .where("contacts_lists_profiles.list = ?", getId())
+	   .orderBy("profiles.firstName")
 	   .execute();
 	}
 

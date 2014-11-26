@@ -4,8 +4,8 @@ require 'oauth'
 # Fill the keys and secrets you retrieved after registering your app
 api_key = '78imlmkvuvhi'
 api_secret = 'BbIEylD3TBcAvVeR'
-user_token = '7511b9ec-237a-4790-9707-f0a16b48d721'
-user_secret = 'e46f0dd5-1a33-4615-978f-e0fb27859a0b'
+user_token = 'b7fe2fb5-7715-40a2-af89-2ba6e6d9c713'
+user_secret = '9032088c-8109-4de9-a382-9bb7b3e657f7'
 
 # Specify LinkedIn API endpoint
 configuration = { :site => 'https://api.linkedin.com',
@@ -24,14 +24,14 @@ consumer = OAuth::Consumer.new(api_key, api_secret, configuration)
 access_token = OAuth::AccessToken.new(consumer, user_token, user_secret)
 
 # Make call to LinkedIn to retrieve your own profile
-fields = ['first-name', 'headline', 'num-connections'].join(',')
+fields = ['first-name', 'headline', 'num-connections', 'picture-urls::(original,100x100)'].join(',')
 response = access_token.get("http://api.linkedin.com/v1/people/~:(#{fields})")
-puts response
+puts response.body
 
-connections = access_token.get("http://api.linkedin.com/v1/people/~/connections:(first-name,last-name,id,location)")
-#Add {'x-li-format' => 'json} to retrieve json instead
+connections = access_token.get("http://api.linkedin.com/v1/people/~/connections:(first-name,last-name,id,location,picture-urls::(original))")
+#Add {'x-li-format' => 'json} to retrieve json insteads
 
-puts connections
+puts connections.body
 
 
 #TODO: Handle expired access tokens.
@@ -64,4 +64,3 @@ connections = access_token.get("http://api.linkedin.com/v1/people/~/connections:
 #Add {'x-li-format' => 'json} to retrieve json instead
 puts connections
 =end
-

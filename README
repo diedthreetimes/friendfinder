@@ -12,3 +12,6 @@ URL: http://socialauth-android.googlecode.com/svn/trunk/socialauth-android
 Repository Root: http://socialauth-android.googlecode.com/svn
 Repository UUID: 7a853004-a21d-2956-7251-024617a12917
 Revision: 514
+
+In addition we also have our own branch of SocialAuth (java implementation)
+$ git clone git@github.com:/diedthreetimes/socialauth.git

@@ -24,6 +24,7 @@ public class StringListSerializer extends TypeSerializer {
     return String.class;
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public String serialize(Object data) {
     if (data == null) {

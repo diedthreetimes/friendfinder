@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><AbsoluteLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/AbsoluteLayout1"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" > 
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="276dp"
+        android:layout_height="38dp"
+        android:layout_x="15dp"
+        android:layout_y="119dp"
+        android:text="Your device is looking for others in the background." />
+
+
+</AbsoluteLayout>

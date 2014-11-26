@@ -5,9 +5,7 @@ import java.lang.ref.WeakReference;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -425,15 +423,16 @@ public class DiscoveryService extends Service {
   
   // TODO: Find a way to combine notifications, if multiple peers are found
   private static int DISPLAY_MAX = 7;
-  public void addNotification(ArrayList<String> sharedInputs) {
+  public void addNotification(ContactsListObject contactsList) {
     // It may be faster to send a pointer to the result set instead of serializing.
+    List<ProfileObject> contacts = contactsList.getContactList();
     
     NotificationCompat.Builder b = new NotificationCompat.Builder(this);
     Intent notifyIntent = new Intent(this, IntersectionResultsActivity.class);
     notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
     // Useful flags if we want to resume a current activity
     // .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, sharedInputs);
+    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, contactsList.getId());
     
     // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
     // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
@@ -443,18 +442,18 @@ public class DiscoveryService extends Service {
     b.setContentIntent(pendingIntent)
      .setSmallIcon(R.drawable.ic_notification)
      .setContentTitle("Peer found")
-     .setContentText(""+sharedInputs.size() + " connections in common.")
+     .setContentText(""+contacts.size() + " connections in common.")
      .setAutoCancel(true);
     
     // Big view
     NotificationCompat.InboxStyle style = 
         new NotificationCompat.InboxStyle();
     style.setBigContentTitle("Common connections:");
-    for (int i=0; i < DISPLAY_MAX && i < sharedInputs.size(); i++){
-      style.addLine(sharedInputs.get(i));
+    for (int i=0; i < DISPLAY_MAX && i < contacts.size(); i++){
+      style.addLine(contacts.get(i).getDisplayName());
     }
-    if( DISPLAY_MAX < sharedInputs.size() ) {
-      style.setSummaryText("And " + (sharedInputs.size() - DISPLAY_MAX) + " more...");
+    if( DISPLAY_MAX < contacts.size() ) {
+      style.setSummaryText("And " + (contacts.size() - DISPLAY_MAX) + " more...");
     }
     
     b.setStyle(style);
@@ -911,32 +910,17 @@ public class DiscoveryService extends Service {
           callback.onError();
           return;
         }
-
-        // TODO: This is a strange place to do this, it would make more sense wrapped in the contact list object.
-        HashMap<String, String> idToNameMap = new HashMap<String, String>();
-        for (ProfileObject prof : mContactList) {
-          idToNameMap.put( prof.getUid(), prof.getDisplayName());
-        }
         
         ContactsListObject contacts = new ContactsListObject();
         contacts.save();
 
-        ArrayList<String> commonFriends = new ArrayList<String>();
-        for (String id : result){
-          if (idToNameMap.get(id) == null) {
-            // This can only happen if the input sizes from the server and linkedin don't match
-            // Unfortunately, this is quite frequent
-            commonFriends.add("Hidden Name"); 
-          } else {
-            commonFriends.add(idToNameMap.get(id));
-          }
-          
+        for (String id : result){          
           contacts.put(id);
         }
         
         interaction.sharedContacts = contacts;
         
-        addNotification(commonFriends);
+        addNotification(contacts);
          
         callback.onComplete();
       }

@@ -6,7 +6,6 @@ import java.security.cert.CertificateException;
 import org.json.JSONException;
 
 import com.activeandroid.ActiveAndroid;
-import com.activeandroid.query.Select;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.test.helpers.DatabaseHelper;
 
