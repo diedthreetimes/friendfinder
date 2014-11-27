@@ -56,8 +56,10 @@ public class InteractionAdapter extends ArrayAdapter<Interaction> {
       viewHolder = (ViewHolder) convertView.getTag();
     }
     
-    viewHolder.contactsSize.setText(getContext().getString(R.string.number_of_contacts,
-        rowItem.sharedContacts.getContactList().size()));
+    if (rowItem != null && rowItem.sharedContacts != null) {
+      viewHolder.contactsSize.setText(getContext().getString(R.string.number_of_contacts,
+          rowItem.sharedContacts.getContactList().size()));
+    }
     
     // TODO: Set on click listener for the two buttons
 
