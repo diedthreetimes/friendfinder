@@ -17,7 +17,7 @@ public class Developer {
   public static void initialize(final PreferenceFragment fragment) {
     setupLaunchResultActivity(fragment);
     setupLaunchContactsActivity(fragment);
-    setupClearCache(fragment);
+    setupClearCaches(fragment);
     setupClearInteractions(fragment);
     
     // TODO: put syncnow somewhere
@@ -36,7 +36,7 @@ public class Developer {
     });
   }
   
-  private static void setupClearCache(final PreferenceFragment fragment) {
+  private static void setupClearCaches(final PreferenceFragment fragment) {
     Preference launch = (Preference) fragment.findPreference(fragment.getResources()
         .getString(R.string.pref_clear_cache_key));
     
@@ -45,6 +45,19 @@ public class Developer {
       public boolean onPreferenceClick(Preference preference) {
         Intent intent = new Intent(fragment.getActivity(), DiscoveryService.class);
         intent.setAction(DiscoveryService.ACTION_RESET_CACHE);
+        fragment.getActivity().startService(intent);
+        return true;
+      }
+    });
+    
+    launch = (Preference) fragment.findPreference(fragment.getResources()
+        .getString(R.string.pref_clear_cache_peers_key));
+    
+    launch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+      @Override
+      public boolean onPreferenceClick(Preference preference) {
+        Intent intent = new Intent(fragment.getActivity(), DiscoveryService.class);
+        intent.setAction(DiscoveryService.ACTION_RESET_CACHE_PEERS);
         fragment.getActivity().startService(intent);
         return true;
       }

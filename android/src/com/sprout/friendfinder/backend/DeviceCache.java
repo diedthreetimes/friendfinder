@@ -20,6 +20,7 @@ public class DeviceCache {
    * @param timeout seconds
    */
   DeviceCache(int timeout) { 
+    if (D) Log.d(TAG, "DeviceCache initialized with " + timeout + " second timeout.");
     cache = new HashMap<Device, Long>();
     this.timeout = timeout * 1000;
   }

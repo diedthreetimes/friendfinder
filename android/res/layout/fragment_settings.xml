@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" >
 
     <PreferenceCategory
         android:title="@string/pref_developer_title">
@@ -15,6 +17,10 @@
             android:key="@string/pref_clear_cache_key"
             android:title="@string/pref_clear_cache_title"
             android:summary="@string/pref_clear_cache_summary"/>
+        <Preference
+            android:key="@string/pref_clear_cache_peers_key"
+            android:title="@string/pref_clear_cache_peers_title"
+            android:summary="@string/pref_clear_cache_peers_summary"/>
         <Preference
             android:key="@string/pref_clear_interactions_key"
             android:title="@string/pref_clear_interactions_title"

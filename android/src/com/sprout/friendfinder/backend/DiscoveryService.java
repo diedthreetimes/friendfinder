@@ -6,10 +6,8 @@ import java.security.Security;
 import java.security.cert.CertificateException;
 import java.sql.Timestamp;
 import java.util.Calendar;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -76,6 +74,7 @@ public class DiscoveryService extends Service {
   public static final String ACTION_SYNC = "action_sync";
   public static final String ACTION_LOGOUT = "action_logout";
   public static final String ACTION_RESET_CACHE = "action_cache";
+  public static final String ACTION_RESET_CACHE_PEERS = "action_cache_peers";
   
   /***************************/
   /* ***   Preferences   *** */
@@ -178,6 +177,9 @@ public class DiscoveryService extends Service {
     } else if (intent.getAction().equals(ACTION_LOGOUT)) {
       logout();
     } else if (intent.getAction().equals(ACTION_RESET_CACHE)) {
+      mMessageService.clearAllCache();
+      mDeviceCache.clear();
+    } else if (intent.getAction().equals(ACTION_RESET_CACHE_PEERS)) {
       mDeviceCache.clear();
     }
 
@@ -384,12 +386,13 @@ public class DiscoveryService extends Service {
   /* ** Utility Functions  *** */
   /*****************************/
   
-  private Set<Device> mDiscoveredDevices = new HashSet<Device>();
   // This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
     if(D) Log.i(TAG, "Searching for peers");
     
-    mMessageService.discoverPeers(new CommunicationService.Callback(){  
+    mMessageService.discoverPeers(new CommunicationService.Callback(){
+      
+      private ScanResult result = null;
       @Override
       public void onPeerDiscovered(Device peer) { 
         if (V) Log.i(TAG, "Device: " + peer.getName() + " found, (But not verified)");
@@ -405,7 +408,7 @@ public class DiscoveryService extends Service {
           if (D) Log.i(TAG, "Discovery completed");
           
           if (mState != STATE_CONNECTED && mState != STATE_RUNNING)
-            run();
+            runAll(result);
         }
       }
 
@@ -413,14 +416,14 @@ public class DiscoveryService extends Service {
       public void onDiscoveryStarted(){
         if (D) Log.i(TAG, "Discovery started");
         
-        mDiscoveredDevices.clear();
+        result = new ScanResult();
       }
 
       @Override
       public void onServiceDiscovered(Device peer) {
         Log.i(TAG, "Service discovered! Adding to waitlist " + peer.getName());
         
-        mDiscoveredDevices.add(peer);
+        result.add(peer);
       }
     });
   }
@@ -688,7 +691,15 @@ public class DiscoveryService extends Service {
   }
 
   private DeviceCache mDeviceCache = new DeviceCache(DEVICE_AVOID_TIMEOUT);
+  private ScanResult mLastScanResult; // TODO: Expose this for adding "available" peers ui
   private Device mRunningDevice;
+  
+  // Called when discovery completes to run all discovered devices
+  private void runAll(ScanResult discovered) {
+    mLastScanResult = discovered;
+    
+    run();
+  }
   private void run() {
     setState(STATE_RUNNING);
 
@@ -703,9 +714,10 @@ public class DiscoveryService extends Service {
     
     // This is the code for performing a single connection
     mMessageService.stopDiscovery();        
+    
     if(D) Log.i(TAG, "Discovery stopped. attempting to connect");
     
-    Iterator<Device> i = mDiscoveredDevices.iterator();
+    Iterator<Device> i = mLastScanResult.iterator();
     
     // If we have no devices more devices to connect to
     if (!i.hasNext()) {
