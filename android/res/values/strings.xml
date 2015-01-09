@@ -29,7 +29,7 @@
     <string name="pref_clear_cache_title">Clear All Device Caches</string>
     <string name="pref_clear_cache_summary">Allow connections to any bluetooth device.</string>
     
-    <string name="pref_clear_cache_peers_key">pref_clear_cache</string>
+    <string name="pref_clear_cache_peers_key">pref_clear_cache_peers</string>
     <string name="pref_clear_cache_peers_title">Clear Peer Device Cache</string>
     <string name="pref_clear_cache_peers_summary">Allow connections to the same peer(our app) device.</string>
 </resources>

@@ -423,6 +423,11 @@ public class DiscoveryService extends Service {
       public void onServiceDiscovered(Device peer) {
         Log.i(TAG, "Service discovered! Adding to waitlist " + peer.getName());
         
+        if (result == null) {
+          Log.e(TAG, "Why hasn't discovery been started already!!!");
+          return;
+        }
+        
         result.add(peer);
       }
     });
@@ -717,6 +722,12 @@ public class DiscoveryService extends Service {
     
     if(D) Log.i(TAG, "Discovery stopped. attempting to connect");
     
+    if (mLastScanResult == null) {
+      if(V) Log.d(TAG, "No scan present.");
+      ready();
+      return;
+    }
+    
     Iterator<Device> i = mLastScanResult.iterator();
     
     // If we have no devices more devices to connect to
@@ -741,9 +752,19 @@ public class DiscoveryService extends Service {
     // Upon establishing a connection we enter the connected() state
   }
   
-  private void connected() {
+  private void connected() {    
+    // TODO: What is the best thing to do in this case? For now just warn and return.
+    if (mState == STATE_CONNECTED) {
+      Log.w(TAG, "Connected() called while already connected");
+      // The hope is that here we already have a protocol running asynchronously.
+      // We may be able to remove this case from ever happening until then a (slightly horrendous) stop gap would be
+      //   a timer that ensures the service doesn't get stuck
+      return;
+    }
+    
+    // This shouldn't happen.
     if (mState != STATE_RUNNING && mState != STATE_READY) {
-      Log.e(TAG, "Connected() called before calling ready()");
+      Log.w(TAG, "Connected() called before calling ready()");
       stop();
       return;
     }
@@ -827,6 +848,7 @@ public class DiscoveryService extends Service {
           // For now we just checkCommonFriends
 
           // Is it possible that this will be fired while we are already connecting?
+          // YES, not sure what the right thing to do is in this case.
           
           target.connected();
       
