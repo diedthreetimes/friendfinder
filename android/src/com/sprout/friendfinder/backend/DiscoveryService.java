@@ -36,6 +36,7 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.activeandroid.query.Select;
 import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
@@ -50,6 +51,7 @@ import com.sprout.friendfinder.models.ProfileObject;
 import com.sprout.friendfinder.models.SampleData;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
+import com.sprout.friendfinder.ui.MainActivity;
 
 // TODO: General
 //    Monitor INTERNET access state.
@@ -184,7 +186,7 @@ public class DiscoveryService extends Service {
     } else if (intent.getAction().equals(ACTION_RESET_CACHE_PEERS)) {
       mDeviceCache.clear();
     } else if (intent.getAction().equals(ACTION_ADD_NOTIFICATION)) {
-    	addNotification(SampleData.simulateContacts());
+    	addNotification();
      }
 
     // This is useful to ensure that our service stays alive. 
@@ -435,6 +437,32 @@ public class DiscoveryService extends Service {
         result.add(peer);
       }
     });
+  }
+  
+  public void addNotification() {
+	  // get number of all requests
+	  // TODO: get # of pending requests or new requests? => why .where(connectionRequested='true'"). doesnt work?
+	  // TODO: maybe create a notification class that handles this, since its getting messy here
+	  int numRequests = new Select().from(Interaction.class).execute().size();
+	  NotificationCompat.Builder b = new NotificationCompat.Builder(this);
+	    
+	  Intent notifyIntent = new Intent(this, MainActivity.class);
+	  notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+	    
+	  // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
+	  // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
+	  PendingIntent pendingIntent = PendingIntent.getActivity( this, 10, notifyIntent, PendingIntent.FLAG_CANCEL_CURRENT );
+
+	  // Regular view
+	  b.setContentIntent(pendingIntent)
+	   .setSmallIcon(R.drawable.ic_notification)
+	   .setContentTitle("Peer found")
+	   .setContentText(numRequests + " peers awaiting for your approval")
+	   .setAutoCancel(true);
+	    
+	  NotificationManager mNotificationManager =
+	       (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+	  mNotificationManager.notify(10, b.build());
   }
   
   // TODO: Find a way to combine notifications, if multiple peers are found
@@ -962,7 +990,7 @@ public class DiscoveryService extends Service {
         
         interaction.sharedContacts = contacts;
         
-        addNotification(contacts);
+        addNotification();
          
         callback.onComplete();
       }
