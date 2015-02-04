@@ -47,6 +47,7 @@ import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
+import com.sprout.friendfinder.models.SampleData;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
 
@@ -75,6 +76,7 @@ public class DiscoveryService extends Service {
   public static final String ACTION_LOGOUT = "action_logout";
   public static final String ACTION_RESET_CACHE = "action_cache";
   public static final String ACTION_RESET_CACHE_PEERS = "action_cache_peers";
+  public static final String ACTION_ADD_NOTIFICATION = "action_add_notification";
   
   /***************************/
   /* ***   Preferences   *** */
@@ -181,7 +183,9 @@ public class DiscoveryService extends Service {
       mDeviceCache.clear();
     } else if (intent.getAction().equals(ACTION_RESET_CACHE_PEERS)) {
       mDeviceCache.clear();
-    }
+    } else if (intent.getAction().equals(ACTION_ADD_NOTIFICATION)) {
+    	addNotification(SampleData.simulateContacts());
+     }
 
     // This is useful to ensure that our service stays alive. 
     // TODO: We may only want to return this for start requests

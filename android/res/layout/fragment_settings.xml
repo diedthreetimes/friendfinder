@@ -25,6 +25,10 @@
             android:key="@string/pref_clear_interactions_key"
             android:title="@string/pref_clear_interactions_title"
             android:summary="@string/pref_clear_interactions_summary"/>
+        <Preference
+            android:key="@string/pref_add_notification_key"
+            android:title="@string/pref_add_notification_title"
+            android:summary="@string/pref_add_notification_summary"/>
     </PreferenceCategory>
 
 </PreferenceScreen>
