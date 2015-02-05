@@ -444,10 +444,10 @@ public class DiscoveryService extends Service {
 	  // get number of all requests
 	  // TODO: get # of pending requests or new requests? => why .where(connectionRequested='true'"). doesnt work?
 	  // TODO: maybe create a notification class that handles this, since its getting messy here
-	  int numRequests = new Select().from(Interaction.class).execute().size();
+	  int numRequests = new Select().from(Interaction.class).where("failed=0 and connectionRequested=1").execute().size();
 	  NotificationCompat.Builder b = new NotificationCompat.Builder(this);
 	    
-	  Intent notifyIntent = new Intent(this, MainActivity.class);
+	  Intent notifyIntent = new Intent(this, NewContactsActivity.class);
 	  notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 	    
 	  // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
@@ -814,6 +814,7 @@ public class DiscoveryService extends Service {
     final Interaction interaction = new Interaction();
     interaction.address = mRunningDevice.getAddress();
     interaction.timestamp = Calendar.getInstance();
+    interaction.connectionRequested = true;
     // TODO: We also want to set the interaction's public key but this isn't very important atm.
     //   eventually this needs to happen in the crypto protocol
     
