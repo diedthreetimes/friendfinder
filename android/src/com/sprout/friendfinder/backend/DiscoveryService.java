@@ -52,6 +52,7 @@ import com.sprout.friendfinder.models.SampleData;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
 import com.sprout.friendfinder.ui.MainActivity;
+import com.sprout.friendfinder.ui.NewContactsActivity;
 
 // TODO: General
 //    Monitor INTERNET access state.
@@ -990,9 +991,9 @@ public class DiscoveryService extends Service {
         
         interaction.sharedContacts = contacts;
         
-        addNotification();
-         
         callback.onComplete();
+        
+        addNotification();
       }
     }
     
