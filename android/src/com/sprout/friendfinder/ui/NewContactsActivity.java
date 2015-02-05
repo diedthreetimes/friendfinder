@@ -30,6 +30,8 @@ public class NewContactsActivity extends ListActivity {
 	  @Override
 	  public void onCreate(Bundle savedInstanceState) {        
 	    super.onCreate(savedInstanceState);
+	    
+	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
 	    // TODO: to get pending request, need to add a boolean in ProfileObject, right now a simple hack by using connectionRequested
 	    List<Interaction> interactions =  new Select().from(Interaction.class).where("failed=0 and connectionRequested=1").orderBy("timestamp DESC").execute();
@@ -72,6 +74,9 @@ public class NewContactsActivity extends ListActivity {
 	    case R.id.settings:
 	      launchSettings();
 	      return true;
+	    case android.R.id.home:
+			returnToMainPage();
+	    	return true;
 	    default: return super.onOptionsItemSelected(item);
 	    }
 	  }
@@ -92,5 +97,16 @@ public class NewContactsActivity extends ListActivity {
 	    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, interaction.sharedContacts.getId());
 
 	    startActivity(notifyIntent);
+	  }
+	  
+	  @Override
+	  public void onBackPressed() {
+		  returnToMainPage();
+	  }
+	  
+	  public void returnToMainPage() {
+		  this.finish();
+		  Intent intent = new Intent(this, MainActivity.class);
+		  startActivity(intent);
 	  }
 }
