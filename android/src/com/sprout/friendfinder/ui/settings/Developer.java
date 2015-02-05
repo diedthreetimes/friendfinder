@@ -10,7 +10,6 @@ import com.sprout.friendfinder.models.SampleData;
 import android.content.Intent;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.widget.Toast;
 
 /**
  * Class that sets up the "Developer Options" portion of the settings screen
@@ -86,7 +85,6 @@ public class Developer {
   private static void setupLaunchContactsActivity(final PreferenceFragment fragment) {
     Preference launch = (Preference) fragment.findPreference(fragment.getResources()
         .getString(R.string.pref_launch_contacts_key));
-    Toast.makeText(fragment.getActivity(), "Launching", Toast.LENGTH_SHORT).show();
     launch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
       @Override
       public boolean onPreferenceClick(Preference preference) {

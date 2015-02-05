@@ -31,8 +31,5 @@
     <string name="pref_add_notification_key">pref_add_notification</string>
     <string name="pref_add_notification_title">Add a notification</string>
     <string name="pref_add_notification_summary">Test expanding/collapsing notifications.</string>
-    <string name="title_activity_new_contact">NewContactActivity</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
 
 </resources>
