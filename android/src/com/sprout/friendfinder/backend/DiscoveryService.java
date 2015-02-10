@@ -19,10 +19,7 @@ import org.brickred.socialauth.android.SocialAuthError;
 import org.brickred.socialauth.util.AccessGrant;
 import org.json.JSONException;
 
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -32,11 +29,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
-import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.activeandroid.query.Select;
 import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
@@ -48,11 +43,7 @@ import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
-import com.sprout.friendfinder.models.SampleData;
-import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.LoginActivity;
-import com.sprout.friendfinder.ui.MainActivity;
-import com.sprout.friendfinder.ui.NewContactsActivity;
 
 // TODO: General
 //    Monitor INTERNET access state.
@@ -79,7 +70,6 @@ public class DiscoveryService extends Service {
   public static final String ACTION_LOGOUT = "action_logout";
   public static final String ACTION_RESET_CACHE = "action_cache";
   public static final String ACTION_RESET_CACHE_PEERS = "action_cache_peers";
-  public static final String ACTION_ADD_NOTIFICATION = "action_add_notification";
   
   /***************************/
   /* ***   Preferences   *** */
@@ -186,9 +176,7 @@ public class DiscoveryService extends Service {
       mDeviceCache.clear();
     } else if (intent.getAction().equals(ACTION_RESET_CACHE_PEERS)) {
       mDeviceCache.clear();
-    } else if (intent.getAction().equals(ACTION_ADD_NOTIFICATION)) {
-    	addNotification();
-     }
+    }
 
     // This is useful to ensure that our service stays alive. 
     // TODO: We may only want to return this for start requests
@@ -438,74 +426,6 @@ public class DiscoveryService extends Service {
         result.add(peer);
       }
     });
-  }
-  
-  public void addNotification() {
-	  // get number of all requests
-	  // TODO: get # of pending requests or new requests? => why .where(connectionRequested='true'"). doesnt work?
-	  // TODO: maybe create a notification class that handles this, since its getting messy here
-	  int numRequests = new Select().from(Interaction.class).where("failed=0 and connectionRequested=1").execute().size();
-	  NotificationCompat.Builder b = new NotificationCompat.Builder(this);
-	    
-	  Intent notifyIntent = new Intent(this, NewContactsActivity.class);
-	  notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-	    
-	  // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
-	  // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
-	  PendingIntent pendingIntent = PendingIntent.getActivity( this, 10, notifyIntent, PendingIntent.FLAG_CANCEL_CURRENT );
-
-	  // Regular view
-	  b.setContentIntent(pendingIntent)
-	   .setSmallIcon(R.drawable.ic_notification)
-	   .setContentTitle("Peer found")
-	   .setContentText(numRequests + " peers awaiting for your approval")
-	   .setAutoCancel(true);
-	    
-	  NotificationManager mNotificationManager =
-	       (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-	  mNotificationManager.notify(10, b.build());
-  }
-  
-  // TODO: Find a way to combine notifications, if multiple peers are found
-  private static int DISPLAY_MAX = 7;
-  public void addNotification(ContactsListObject contactsList) {
-    // It may be faster to send a pointer to the result set instead of serializing.
-    List<ProfileObject> contacts = contactsList.getContactList();
-    
-    NotificationCompat.Builder b = new NotificationCompat.Builder(this);
-    Intent notifyIntent = new Intent(this, IntersectionResultsActivity.class);
-    notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-    // Useful flags if we want to resume a current activity
-    // .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, contactsList.getId());
-    
-    // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
-    // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
-    PendingIntent pendingIntent = PendingIntent.getActivity( this, 10, notifyIntent, PendingIntent.FLAG_CANCEL_CURRENT );
-
-    // Regular view
-    b.setContentIntent(pendingIntent)
-     .setSmallIcon(R.drawable.ic_notification)
-     .setContentTitle("Peer found")
-     .setContentText(""+contacts.size() + " connections in common.")
-     .setAutoCancel(true);
-    
-    // Big view
-    NotificationCompat.InboxStyle style = 
-        new NotificationCompat.InboxStyle();
-    style.setBigContentTitle("Common connections:");
-    for (int i=0; i < DISPLAY_MAX && i < contacts.size(); i++){
-      style.addLine(contacts.get(i).getDisplayName());
-    }
-    if( DISPLAY_MAX < contacts.size() ) {
-      style.setSummaryText("And " + (contacts.size() - DISPLAY_MAX) + " more...");
-    }
-    
-    b.setStyle(style);
- 
-    NotificationManager mNotificationManager =
-        (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    mNotificationManager.notify(10, b.build());
   }
   
   /**
@@ -814,7 +734,6 @@ public class DiscoveryService extends Service {
     final Interaction interaction = new Interaction();
     interaction.address = mRunningDevice.getAddress();
     interaction.timestamp = Calendar.getInstance();
-    interaction.connectionRequested = true;
     // TODO: We also want to set the interaction's public key but this isn't very important atm.
     //   eventually this needs to happen in the crypto protocol
     
@@ -992,9 +911,11 @@ public class DiscoveryService extends Service {
         
         interaction.sharedContacts = contacts;
         
+        Log.i(TAG, "Showing notification");
+    	ContactsNotificationManager.getInstance().showNotification(((LocalBinder) mBinder).getService(), contacts);
+    	
         callback.onComplete();
         
-        addNotification();
       }
     }
     

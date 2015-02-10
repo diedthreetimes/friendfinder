@@ -14,16 +14,17 @@ import android.widget.ListView;
 
 import com.activeandroid.query.Select;
 import com.sprout.friendfinder.R;
+import com.sprout.friendfinder.backend.ContactsNotificationManager;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
 /**
- * Display a list of pending requests
+ * Display a list of all "valid" requests: requests within bluetooth range 
  * @author Oak
  *
  */
-public class NewContactsActivity extends ListActivity {
-	private static final String TAG = NewContactsActivity.class.getSimpleName();
+public class ValidContactsActivity extends ListActivity {
+	private static final String TAG = ValidContactsActivity.class.getSimpleName();
 	  
 	  private InteractionAdapter adapter;
 
@@ -33,8 +34,8 @@ public class NewContactsActivity extends ListActivity {
 	    
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
-	    // TODO: to get pending request, need to add a boolean in ProfileObject, right now a simple hack by using connectionRequested
-	    List<Interaction> interactions =  new Select().from(Interaction.class).where("failed=0 and connectionRequested=1").orderBy("timestamp DESC").execute();
+	    // TODO: to get all (pending?) valid requests, might need to get it from mLastScan in DiscoveryService
+	    List<Interaction> interactions =  new Select().distinct().from(Interaction.class).where("failed=0 and infoExchanged=0").orderBy("timestamp DESC").execute();
 
 	    if(interactions.size() == 0) {
 	      // TODO: Show something interesting in this case
@@ -47,17 +48,15 @@ public class NewContactsActivity extends ListActivity {
 	    setListAdapter(adapter); 
 	   
 	  }
-	  @Override
-	  public void onStart() {
-	    super.onStart();
-	  }
 
 	  @Override
 	  public synchronized void onResume() {
 	    super.onResume();
 
+	    ContactsNotificationManager.getInstance().clear();
 	    adapter.clear();
-	    List<Interaction> interactions =  new Select().from(Interaction.class).where("failed=0 and connectionRequested=1").orderBy("timestamp DESC").execute();
+	    // TODO: to get all (pending?) valid requests, might need to get it from mLastScan in DiscoveryService
+	    List<Interaction> interactions =  new Select().from(Interaction.class).where("failed=0 and infoExchanged=0").orderBy("timestamp DESC").execute();
 	    adapter.addAll(interactions);
 	  }
 

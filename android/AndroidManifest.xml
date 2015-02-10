@@ -29,6 +29,9 @@
         android:allowBackup="false"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name" >
+            
+        <receiver android:name=".backend.ContactsNotificationManager$NotificationBroadcastReceiver" />
+        
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/app_name" >
@@ -49,7 +52,7 @@
             android:label="@string/app_name" >
         </activity>
         <activity
-            android:name=".ui.NewContactsActivity"
+            android:name=".ui.ValidContactsActivity"
             android:label="@string/app_name" >
         </activity>
 

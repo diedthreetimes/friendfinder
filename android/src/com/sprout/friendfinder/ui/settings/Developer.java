@@ -2,9 +2,8 @@ package com.sprout.friendfinder.ui.settings;
 
 import com.activeandroid.util.SQLiteUtils;
 import com.sprout.friendfinder.R;
-import com.sprout.friendfinder.backend.ContactsNotification;
+import com.sprout.friendfinder.backend.ContactsNotificationManager;
 import com.sprout.friendfinder.backend.DiscoveryService;
-import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.SampleData;
 
 import android.content.Intent;
@@ -33,9 +32,7 @@ public class Developer {
 	    launch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 	        @Override
 	        public boolean onPreferenceClick(Preference preference) {
-	            Intent intent = new Intent(fragment.getActivity(), DiscoveryService.class);
-	            intent.setAction(DiscoveryService.ACTION_ADD_NOTIFICATION);
-	            fragment.getActivity().startService(intent);
+	        	ContactsNotificationManager.getInstance().showNotification(preference.getContext(), SampleData.simulateContacts());
 	            return true;
 	        }
 	      });
