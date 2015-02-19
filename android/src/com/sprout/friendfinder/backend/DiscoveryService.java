@@ -22,6 +22,7 @@ import org.json.JSONException;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Bundle;
@@ -75,6 +76,7 @@ public class DiscoveryService extends Service {
   /* ***   Preferences   *** */
   /***************************/
   public static final String PROFILE_ID_PREF = "profile_id";
+  public static final String LAST_SCAN_DEVICES_PREF = "last_scan_devices";
 
   /***************************/
   /* ***    STATES       *** */
@@ -656,8 +658,14 @@ public class DiscoveryService extends Service {
   private void runAll(ScanResult discovered) {
     mLastScanResult = discovered;
     
+    SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+    Editor prefsEditor = mPrefs.edit();
+    prefsEditor.putStringSet(LAST_SCAN_DEVICES_PREF, mLastScanResult.getAddresses()).commit();
+    Log.i(TAG, "In run all, number of devices found: " + mLastScanResult.size());
+    
     run();
   }
+  
   private void run() {
     setState(STATE_RUNNING);
 
@@ -912,10 +920,10 @@ public class DiscoveryService extends Service {
         interaction.sharedContacts = contacts;
         
         Log.i(TAG, "Showing notification");
-    	ContactsNotificationManager.getInstance().showNotification(((LocalBinder) mBinder).getService(), contacts);
+        
+    	ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, contacts);
     	
         callback.onComplete();
-        
       }
     }
     

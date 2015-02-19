@@ -10,6 +10,10 @@
     <string name="ic_messaging_desc">Start Messaging</string>
     <string name="number_of_contacts">%1$d common contacts</string>
     <string name="anonomous_name">Anonomous</string>
+    
+    <!--  Header Strings -->
+    <string name="active_interactions">Active Interactions</string>
+    <string name="past_interactions">Past Interactions</string>
 
     <!-- Preference Developer values -->
     <string name="pref_developer_title">Developer Settings</string>
