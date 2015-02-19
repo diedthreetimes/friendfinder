@@ -45,7 +45,7 @@ public class ValidContactsActivity extends ListActivity {
 	    
 	    getActionBar().setDisplayHomeAsUpEnabled(true);
 
-	    resetAdapter();
+	    reloadAdapter();
 	    
 		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 	    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -55,7 +55,8 @@ public class ValidContactsActivity extends ListActivity {
 					String key) {
 				Log.i(TAG, "pref change for key: "+key);
 				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
-					recreate();
+					reloadAdapter();
+					adapter.notifyDataSetChanged();
 				}
 				
 			}
@@ -70,7 +71,7 @@ public class ValidContactsActivity extends ListActivity {
 	  /**
 	   * reset adapter if been used before. Otherwise, initialize it.
 	   */
-	  private void resetAdapter() {
+	  private void reloadAdapter() {
 		  // TODO: to get all (pending?) valid requests, might need to get it from mLastScan in DiscoveryService
 		  List<Interaction> pastInteractions = getHistoryInteractions();
 		  List<Interaction> activeInteractions = getActiveInteractions();
@@ -150,7 +151,6 @@ public class ValidContactsActivity extends ListActivity {
 	    super.onResume();
 
 	    ContactsNotificationManager.getInstance().clear();
-	    resetAdapter();
 	  }
 
 	  @Override
