@@ -22,7 +22,7 @@ public class ScanResult extends HashSet<Device> {
   public Set<String> getAddresses() {
 	  Set<String> addrs = new HashSet<String>();
 	  for(Device d : this) {
-		  if(d.getAddress() != null) addrs.add(d.getAddress());
+		  if(d != null && d.getAddress() != null) addrs.add(d.getAddress());
 	  }
 	  return addrs;
   }

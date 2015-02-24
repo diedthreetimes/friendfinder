@@ -404,8 +404,9 @@ public class DiscoveryService extends Service {
         else { 
           if (D) Log.i(TAG, "Discovery completed");
           
-          if (mState != STATE_CONNECTED && mState != STATE_RUNNING)
+          if (mState != STATE_CONNECTED && mState != STATE_RUNNING) {
             runAll(result);
+          }
         }
       }
 
@@ -652,18 +653,23 @@ public class DiscoveryService extends Service {
 
   private DeviceCache mDeviceCache = new DeviceCache(DEVICE_AVOID_TIMEOUT);
   private ScanResult mLastScanResult; // TODO: Expose this for adding "available" peers ui
+  
+  private ScanResult mLastScanDevices; // would love to use mLastScanResult but it gets modified/removed at the end
   private Device mRunningDevice;
   
   // Called when discovery completes to run all discovered devices
   private void runAll(ScanResult discovered) {
     mLastScanResult = discovered;
-    
-    SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-    Editor prefsEditor = mPrefs.edit();
-    prefsEditor.putStringSet(LAST_SCAN_DEVICES_PREF, mLastScanResult.getAddresses()).commit();
-    Log.i(TAG, "In run all, number of devices found: " + mLastScanResult.size());
+    mLastScanDevices = (ScanResult) discovered.clone();
     
     run();
+  }
+  
+  private void notifyChanges() {
+    SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+    Editor prefsEditor = mPrefs.edit();
+    prefsEditor.putStringSet(LAST_SCAN_DEVICES_PREF, mLastScanDevices.getAddresses()).apply();
+    Log.i(TAG, "previous discovery, number of devices found: " + mLastScanDevices.size());
   }
   
   private void run() {
@@ -685,6 +691,7 @@ public class DiscoveryService extends Service {
     
     if (mLastScanResult == null) {
       if(V) Log.d(TAG, "No scan present.");
+      notifyChanges();
       ready();
       return;
     }
@@ -694,6 +701,8 @@ public class DiscoveryService extends Service {
     // If we have no devices more devices to connect to
     if (!i.hasNext()) {
       if(V) Log.d(TAG, "No more devices found");
+
+      notifyChanges();
       ready();
       return;
     }
@@ -758,6 +767,7 @@ public class DiscoveryService extends Service {
         
         interaction.failed = false;
         interaction.save();
+        Log.i(TAG, "saving interaction at addr: "+interaction.address);
         run();
       }
 
@@ -920,8 +930,7 @@ public class DiscoveryService extends Service {
         interaction.sharedContacts = contacts;
         
         Log.i(TAG, "Showing notification");
-        
-    	ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, contacts);
+        ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, interaction);
     	
         callback.onComplete();
       }

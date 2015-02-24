@@ -11,7 +11,6 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -47,6 +46,7 @@ public class ValidContactsActivity extends ListActivity {
 
 	    reloadAdapter();
 	    
+	    // set listener for changing adapter values
 		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 	    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			
@@ -76,6 +76,8 @@ public class ValidContactsActivity extends ListActivity {
 		  List<Interaction> pastInteractions = getHistoryInteractions();
 		  List<Interaction> activeInteractions = getActiveInteractions();
 		  
+		  Log.i(TAG, pastInteractions.size() + " history interactions");
+		  
 		  List<Item> items = new ArrayList<Item>();
 		  
 		  // add active sections
@@ -103,7 +105,8 @@ public class ValidContactsActivity extends ListActivity {
 	   * @return all history of interactions
 	   */
 	  private List<Interaction> getHistoryInteractions() {
-		  return new Select().from(Interaction.class).where("failed=0 and infoExchanged=0").orderBy("timestamp DESC").execute();
+		  // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
+		  return new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
 	  }
 	  
 	  /**
@@ -112,38 +115,9 @@ public class ValidContactsActivity extends ListActivity {
 	   * @return
 	   */
 	  private List<Interaction> getActiveInteractions() {
-
-		  List<Interaction> activeInteractions = new ArrayList<Interaction>();
 		  SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-		  Set<String> activeAddr = new HashSet<String>();
 		  Set<String> lastScanAddr = mPrefs.getStringSet(DiscoveryService.LAST_SCAN_DEVICES_PREF, new HashSet<String>());
-		  Log.i(TAG, "all devices found in last scan: " + lastScanAddr.toString());
-		  if(lastScanAddr.isEmpty()) {
-			 Log.i(TAG, "last scan result is empty");
-			 return activeInteractions;
-		  }
-		  
-		  List<String> whereClauseList = new ArrayList<String>();
-		  for(String addr : lastScanAddr) {
-			  whereClauseList.add("address=\""+addr+"\"");
-		  }
-		  String whereClause = TextUtils.join(" or ", whereClauseList);
-		  Log.i(TAG, "Getting active interactions - query: " + whereClause);
-
-		  List<Interaction> allActiveInteractions = new Select().from(Interaction.class).where(whereClause).orderBy("timestamp DESC").execute();
-		  Log.i(TAG, allActiveInteractions.size() + " interactions with address: " + allActiveInteractions);
-		  
-		  // only display 1 interaction per MAC address
-		  for(Interaction interaction : allActiveInteractions) {
-			  String curAddr = interaction.address;
-			  if(!activeAddr.contains(curAddr)) {
-				  activeAddr.add(curAddr);
-				  activeInteractions.add(interaction);
-			  }
-		  }
-		  return activeInteractions;
-		 
-		  
+		  return Interaction.getInteractionFromAddress(lastScanAddr, true);
 	  }
 	  
 	  @Override

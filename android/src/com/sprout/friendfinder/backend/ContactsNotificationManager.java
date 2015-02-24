@@ -12,9 +12,8 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.sprout.friendfinder.R;
-import com.sprout.friendfinder.models.ContactsListObject;
+import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
-import com.sprout.friendfinder.ui.IntersectionResultsActivity;
 import com.sprout.friendfinder.ui.ValidContactsActivity;
 
 /**
@@ -45,14 +44,13 @@ public final class ContactsNotificationManager {
 	
 	private static ContactsNotificationManager cInstance;
 	
-	// caching unseen requests - might need to use Interaction instead of ContactsListObject when comparing lastDevice to validate the freshness
-	private List<ContactsListObject> unseenRequests;
+	private List<Interaction> unseenInteractions;
 	
 	private final static int REQUEST_CODE = 10;
 	private final static int DISPLAY_MAX = 7;
 	
 	private ContactsNotificationManager() {
-		unseenRequests = new ArrayList<ContactsListObject>();
+		unseenInteractions = new ArrayList<Interaction>();
 	}
 	
 	public static ContactsNotificationManager getInstance() {
@@ -65,16 +63,13 @@ public final class ContactsNotificationManager {
 		}
 		return cInstance;
 	}
-	public List<ContactsListObject> getUnseenInteractions() {
-		return unseenRequests;
-	}
 	
 	/**
 	 * clear cache
 	 */
 	public void clear() {
 		Log.i(TAG, "clearing interaction cache");
-		unseenRequests.clear();
+		unseenInteractions.clear();
 	}
 	
 	/**
@@ -82,17 +77,12 @@ public final class ContactsNotificationManager {
 	 *
 	 */
 	public void showNotification(Context context) {
-		Log.i(TAG, unseenRequests.size() + " unseen interactions");
+		Log.i(TAG, unseenInteractions.size() + " unseen interactions");
 	    NotificationCompat.Builder b = new NotificationCompat.Builder(context);
 	    Intent notifyIntent = new Intent(context, ValidContactsActivity.class);
 	    notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 	    // Useful flags if we want to resume a current activity
 	    // .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
-	    // Show big view if there are multiple peers found
-	    if(unseenRequests.size() == 1) {
-		    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, unseenRequests.get(0).getId());
-	    }
 	    
 	    // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
 	    // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
@@ -102,15 +92,15 @@ public final class ContactsNotificationManager {
 	    b.setContentIntent(pendingIntent)
 	     .setSmallIcon(R.drawable.ic_notification)
 	     .setContentTitle("Peer found")
-	     .setContentText(""+unseenRequests.size() + " peers.")
+	     .setContentText(""+unseenInteractions.size() + " peers.")
 	     .setDeleteIntent(PendingIntent.getBroadcast(context, REQUEST_CODE, new Intent(context, NotificationBroadcastReceiver.class), PendingIntent.FLAG_CANCEL_CURRENT))
 	     .setAutoCancel(true);
 	    
 	    // Display all common contacts if there is only one peer
-	    if(unseenRequests.size() == 1) {
+	    if(unseenInteractions.size() == 1) {
 		    
 	    	// Big view
-	    	List<ProfileObject> allContacts = unseenRequests.get(0).getContactList();
+	    	List<ProfileObject> allContacts = unseenInteractions.get(0).sharedContacts.getContactList();
 	    	int numCommonConnections = allContacts.size();
 	    	Log.i(TAG, numCommonConnections + " common connections");
 		    NotificationCompat.InboxStyle style = 
@@ -134,14 +124,9 @@ public final class ContactsNotificationManager {
 	        (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 	    mNotificationManager.notify(REQUEST_CODE, b.build());
 	}
-
-	/**
-	 * build a notification for a new interaction
-	 * @param contactsList
-	 */
-	public void showNotification(Context context, ContactsListObject contactsList) {
-	    // It may be faster to send a pointer to the result set instead of serializing.
-		unseenRequests.add(contactsList);
+	
+	public void showNotification(Context context, Interaction interaction) {
+		unseenInteractions.add(interaction);
 		showNotification(context);
 	}
 	

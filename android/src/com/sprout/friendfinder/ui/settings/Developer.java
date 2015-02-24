@@ -4,6 +4,7 @@ import com.activeandroid.util.SQLiteUtils;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.ContactsNotificationManager;
 import com.sprout.friendfinder.backend.DiscoveryService;
+import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.SampleData;
 
 import android.content.Intent;
@@ -32,7 +33,7 @@ public class Developer {
 	    launch.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 	        @Override
 	        public boolean onPreferenceClick(Preference preference) {
-	        	ContactsNotificationManager.getInstance().showNotification(preference.getContext(), SampleData.simulateContacts());
+	        	ContactsNotificationManager.getInstance().showNotification(preference.getContext(), SampleData.simulateInteraction());
 	            return true;
 	        }
 	      });
