@@ -1,30 +1,25 @@
 package com.sprout.friendfinder.ui;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
-import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.ListView;
 import android.widget.Toast;
 
-import com.activeandroid.query.Select;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.DiscoveryService;
 import com.sprout.friendfinder.models.Interaction;
-import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
 
 // TODO: Rename this to HistoryActivity
-public class MainActivity extends ListActivity {
+// Display history + activt interactions
+public class MainActivity extends InteractionBaseActivity {
 
   private static final String TAG = MainActivity.class.getSimpleName();
   private static final boolean D = true;
@@ -34,8 +29,6 @@ public class MainActivity extends ListActivity {
   private static final int REQUEST_DISCOVERABLE = 4;
 
   private BluetoothAdapter mBluetoothAdapter = null;
-  
-  private InteractionAdapter adapter;
 
   //to store key-value pairs: 
   SharedPreferences sharedPreference;
@@ -44,17 +37,6 @@ public class MainActivity extends ListActivity {
   @Override
   public void onCreate(Bundle savedInstanceState) {        
     super.onCreate(savedInstanceState);
-
-    List<Interaction> interactions =  new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
-    if(interactions.size() == 0) {
-      // TODO: Show something interesting in this case
-      Log.i("TAG", "No interactions found");
-    } 
-
-    adapter = new InteractionAdapter(this, interactions);
-
-    // Bind to our new adapter.
-    setListAdapter(adapter);
     
     // Get local Bluetooth adapter
     mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -85,39 +67,6 @@ public class MainActivity extends ListActivity {
     super.onStart();
   }
 
-  @Override
-  public synchronized void onResume() {
-    super.onResume();
-    
-    // TODO: update this as things change
-    adapter.clear();
-    List<Interaction>interactions = new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
-    adapter.addAll(interactions);
-  }
-
-
-  @Override
-  public synchronized void onPause() {
-    super.onPause();
-  }
-
-  @Override
-  public void onStop() {
-    super.onStop();
-  }
-
-  @Override
-  public void onDestroy() {
-    super.onDestroy();
-  }
-
-
-  @Override
-  public boolean onCreateOptionsMenu(Menu menu) {
-    MenuInflater inflater = getMenuInflater();
-    inflater.inflate(R.menu.menubar, menu);
-    return true;
-  }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
@@ -168,22 +117,32 @@ public class MainActivity extends ListActivity {
     intent.setAction(DiscoveryService.ACTION_RESTART);
     startService(intent);
   }
-
-  private void launchSettings() {
-    Intent intent = new Intent(this, SettingsActivity.class);
-    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-    startActivity(intent);
-  }
   
-  @Override
-  public void onListItemClick(ListView l, View v, int position, long id) {
-    Interaction interaction = ((Interaction) getListView().getItemAtPosition(position));
-    // Might need to reload the interaction here
-
-    Intent notifyIntent = new Intent(this, IntersectionResultsActivity.class);
-    //notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-    notifyIntent.putExtra(IntersectionResultsActivity.EXTRA_DISPLAY, interaction.sharedContacts.getId());
-
-    startActivity(notifyIntent);
-  }
+	@Override
+	protected void reloadAdapter() {
+	  List<Interaction> pastInteractions = getHistoryInteractions();
+	  List<Interaction> activeInteractions = getActiveInteractions();
+	  
+	  List<Item> items = new ArrayList<Item>();
+	  
+	  // add active sections
+	  items.add(new Header(getString(R.string.active_interactions)));
+	  for(Interaction interaction : activeInteractions) {
+	  	items.add(new InteractionItem(interaction));
+	  }
+	  
+	  // add history sections
+	  items.add(new Header(getString(R.string.past_interactions)));
+	  for(Interaction interaction : pastInteractions) {
+	  	items.add(new InteractionItem(interaction));
+	  }
+	  
+	  if(adapter == null) {
+		  adapter = new ItemAdapter(this, items);
+	  } else {
+		  adapter.clear();
+		  adapter.addAll(items);
+	  }
+		
+	}
 }
