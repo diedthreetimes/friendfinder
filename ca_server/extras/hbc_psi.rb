@@ -26,22 +26,42 @@ class HbcPsi
 
   @@t = (p-1)/q
 
-  def self.sig_message set
+  def self.sig_message(set, psi_ca)
     #TODO: Ensure set is unique and flat
 
     ru = bigrand(512) % @@q
 
-    string_set = set.collect do |x|
-      encode( self.modpow(hash_str(x), ru, @@p) )
+    plaintext_set = set.collect do |x|
+      self.modpow(hash_str(x, "\0"), ru, @@p)
+    end
+
+    if psi_ca # add psi_ca components 
+      rus = bigrand(512) % @@q
+      shuffle_set = set.shuffle
+      plaintext_shuffle_set = shuffle_set.collect do |x|
+        hash_str( encode( self.modpow(hash_str(x, "\0"), rus, @@p) ), "\1")
+      end
+
+      plaintext_set += plaintext_shuffle_set; # append plain text
+    end
+
+    string_set = plaintext_set.collect do |x|
+      encode(x)
     end.join(' ')
+      
+    plaintext = plaintext_set.collect do |x|
+      x.to_s(16)
+    end.join(' ');
 
     sig = CA.sign(string_set)
     # Do we want to include the data in the signature? It seems that it's encoding is smaller
     # DEBUG PURPOSES ONLY
-    plaintext = set.collect do |x|
-      self.modpow(hash_str(x), ru, @@p).to_s(16)
-    end.join(' ')
-    {signed_message: sig.to_pem, secret: encode( ru ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+
+    if psi_ca
+      {signed_message: sig.to_pem, secret: encode( ru ) + ' ' + encode( rus ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+    else
+      {signed_message: sig.to_pem, secret: encode( ru ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+    end
     # {signed_message: sig.to_pem, secret: encode( ru )}
 
   end
