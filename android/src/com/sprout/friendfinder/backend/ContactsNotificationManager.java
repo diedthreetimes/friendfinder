@@ -5,10 +5,12 @@ import java.util.List;
 
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.TaskStackBuilder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.support.v4.app.NotificationCompat;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.sprout.friendfinder.R;
@@ -28,6 +30,7 @@ import com.sprout.friendfinder.ui.ValidContactsActivity;
 public final class ContactsNotificationManager {
 
 	private static final String TAG = ContactsNotificationManager.class.getSimpleName();
+	public static final String CACHE_INTERACT_ID_EXTRA = "cache_interaction_id";
 	
 	/**
 	 * Upon receiving notification getting dismissed, clear interaction cache
@@ -80,13 +83,28 @@ public final class ContactsNotificationManager {
 		Log.i(TAG, unseenInteractions.size() + " unseen interactions");
 	    NotificationCompat.Builder b = new NotificationCompat.Builder(context);
 	    Intent notifyIntent = new Intent(context, ValidContactsActivity.class);
+	    
+	    // put interaction id in extras
+	    ArrayList<String> cacheInteractionId = new ArrayList<String>();
+	    for(Interaction ui : unseenInteractions) { 
+	      cacheInteractionId.add(String.valueOf(ui.getId()));
+	    }
+	    Log.i(TAG, "putting cache id into extras: " + TextUtils.join(" ", cacheInteractionId));
+	    notifyIntent.putStringArrayListExtra(CACHE_INTERACT_ID_EXTRA, cacheInteractionId);
+	    
 	    notifyIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 	    // Useful flags if we want to resume a current activity
 	    // .setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 	    
 	    // FLAG_CANCEL_CURRENT ensures that we don't see security errors. However, it also invalidates any given intents.
 	    // In this case, this is the desired behavior. When a new conneciton is found, we would like to remove the old one.
-	    PendingIntent pendingIntent = PendingIntent.getActivity( context, REQUEST_CODE, notifyIntent, PendingIntent.FLAG_CANCEL_CURRENT );
+
+	    TaskStackBuilder stackBuilder = TaskStackBuilder.create(context);
+  		// Adds the back stack
+  		stackBuilder.addParentStack(ValidContactsActivity.class);
+  		stackBuilder.addNextIntent(notifyIntent);
+  		PendingIntent pendingIntent = stackBuilder.getPendingIntent(REQUEST_CODE, PendingIntent.FLAG_UPDATE_CURRENT);
+//	    PendingIntent pendingIntent = PendingIntent.getActivity( context, REQUEST_CODE, notifyIntent, PendingIntent.FLAG_CANCEL_CURRENT );
 
 	    // Regular view
 	    b.setContentIntent(pendingIntent)
@@ -119,6 +137,7 @@ public final class ContactsNotificationManager {
 		    }
 		    b.setStyle(style);
 	    }
+	    
 	 
 	    NotificationManager mNotificationManager =
 	        (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -129,6 +148,4 @@ public final class ContactsNotificationManager {
 		unseenInteractions.add(interaction);
 		showNotification(context);
 	}
-	
-	// TODO: validating if the object is "fresh" by comparing to lastScanDevices
 }

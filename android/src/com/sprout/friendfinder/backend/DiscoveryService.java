@@ -397,6 +397,7 @@ public class DiscoveryService extends Service {
         if (V) Log.i(TAG, "Device: " + peer.getName() + " found, (But not verified)");
       } // We don't use this function, since these devices may not be part of our app   
 
+      // TODO: when no device is found, this code doesnt get executed...
       @Override
       public void onDiscoveryComplete(boolean success){
         if(!success) {
@@ -662,7 +663,9 @@ public class DiscoveryService extends Service {
   // Called when discovery completes to run all discovered devices
   private void runAll(ScanResult discovered) {
     mLastScanResult = discovered;
-    mLastScanDevices = (ScanResult) discovered.clone();
+    
+    // sometimes it can be null
+    if(discovered != null)  mLastScanDevices = (ScanResult) discovered.clone();
     
     run();
   }
@@ -769,6 +772,9 @@ public class DiscoveryService extends Service {
         
         interaction.failed = false;
         interaction.save();
+        
+        // show notification on success after getting address
+        ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, interaction);
         Log.i(TAG, "saving interaction at addr: "+interaction.address);
         run();
       }
@@ -932,7 +938,6 @@ public class DiscoveryService extends Service {
         interaction.sharedContacts = contacts;
         
         Log.i(TAG, "Showing notification");
-        ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, interaction);
     	
         callback.onComplete();
       }
