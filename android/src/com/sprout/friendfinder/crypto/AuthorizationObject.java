@@ -80,9 +80,17 @@ public class AuthorizationObject extends Model implements Serializable {
   @Column
   private transient ArrayList<String> orderedInput;
   
-  public static AuthorizationObject getAvailableAuth(Context context) throws CertificateException, IOException {
+  public enum AuthorizationObjectType {
+	  PSI, PSI_CA;
+  }
+  
+  @Column
+  protected AuthorizationObjectType type = AuthorizationObjectType.PSI; // default type is psi
+  
+  public static AuthorizationObject getAvailableAuth(Context context, AuthorizationObjectType type) throws CertificateException, IOException {
     // Return any auth for now, since we don't batch authorizations
-    AuthorizationObject auth = new Select().from(AuthorizationObject.class).executeSingle();
+    AuthorizationObject auth = new Select().from(AuthorizationObject.class).where("type=?",type).executeSingle();
+    Log.i(TAG, "Load cert for type: "+type);
     auth.loadCert(context);
     return auth;
   }
@@ -120,6 +128,11 @@ public class AuthorizationObject extends Model implements Serializable {
     this.R = null;
     this.cert = other.cert;
     this.auth = auth;
+  }
+  
+  public AuthorizationObject(Context ctx, String response, AuthorizationObjectType type) throws CertificateException, JSONException, IOException {
+	  this(ctx, response);
+	  this.type = type;
   }
 
   public AuthorizationObject(Context ctx, String response) throws JSONException, IOException, CertificateException {

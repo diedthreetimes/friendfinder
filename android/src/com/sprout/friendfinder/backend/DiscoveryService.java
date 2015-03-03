@@ -41,6 +41,7 @@ import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
+import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
@@ -284,7 +285,8 @@ public class DiscoveryService extends Service {
           }
           
           AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
-          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret()).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
+//          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
           
           if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
@@ -349,7 +351,7 @@ public class DiscoveryService extends Service {
   // TODO: Rename
   public AuthorizationObject loadAuthorizationFromFile() {
     try {
-      return AuthorizationObject.getAvailableAuth(this);
+      return AuthorizationObject.getAvailableAuth(this, AuthorizationObjectType.PSI);
     } catch (Exception e) {
       Log.e(TAG, "Certificate could not be laoded. ", e);
       return null;
