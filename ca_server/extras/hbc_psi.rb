@@ -39,7 +39,7 @@ class HbcPsi
       rus = bigrand(512) % @@q
       shuffle_set = set.shuffle
       plaintext_shuffle_set = shuffle_set.collect do |x|
-        hash_str( encode( self.modpow(hash_str(x, "\0"), rus, @@p) ), "\1")
+        hash_str( self.modpow(hash_str(x, "\0"), rus, @@p).to_s(16), "\1")
       end
 
       plaintext_set += plaintext_shuffle_set; # append plain text
