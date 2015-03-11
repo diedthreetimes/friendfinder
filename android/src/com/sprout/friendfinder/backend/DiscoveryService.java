@@ -5,6 +5,7 @@ import java.lang.ref.WeakReference;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
@@ -263,7 +264,7 @@ public class DiscoveryService extends Service {
   
   ProfileObject mProfile;
   List<ProfileObject> mContactList;
-  AuthorizationObject mAuthObj; 
+  List<AuthorizationObject> mAuthObj; // first one is PSI and second one is PSI_CA
 
   // TODO: Rename donwloadAll
   private void downloadAll(final ProfileDownloadCallback callback) {
@@ -287,7 +288,7 @@ public class DiscoveryService extends Service {
           }
           
           AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
-//          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
           
           if(V) Log.d(TAG, "Downloads complete");
@@ -351,9 +352,12 @@ public class DiscoveryService extends Service {
   }
 
   // TODO: Rename
-  public AuthorizationObject loadAuthorizationFromFile() {
+  public List<AuthorizationObject> loadAuthorizationFromFile() {
     try {
-      return AuthorizationObject.getAvailableAuth(this, AuthorizationObjectType.PSI_CA);
+      List<AuthorizationObject> auths = new ArrayList<AuthorizationObject>();
+      auths.add(AuthorizationObject.getAvailableAuth(this, AuthorizationObjectType.PSI));
+      auths.add(AuthorizationObject.getAvailableAuth(this, AuthorizationObjectType.PSI_CA));
+      return auths;
     } catch (Exception e) {
       Log.e(TAG, "Certificate could not be laoded. ", e);
       return null;
@@ -363,7 +367,7 @@ public class DiscoveryService extends Service {
   // Operations on the profile
   private void checkCommonFriends(
       List<ProfileObject> contactList, 
-      AuthorizationObject authobj,
+      List<AuthorizationObject> authobj,
       Interaction interaction,
       ProfileDownloadCallback callback) {
     //assume established communication channel with peer 
@@ -371,6 +375,10 @@ public class DiscoveryService extends Service {
     if (authobj == null || contactList == null) {
       Log.i(TAG, "Authorization or contactList not loaded, aborting test");  
       return;
+    }
+    
+    if(authobj.get(0).getType() != AuthorizationObjectType.PSI || authobj.get(1).getType() != AuthorizationObjectType.PSI_CA) {
+      Log.e(TAG, "the order of auth obj is wrong");
     }
 
     String[] input = new String[contactList.size()];
@@ -380,13 +388,10 @@ public class DiscoveryService extends Service {
     
     Log.i(TAG, "Start common friends cardinality");
     
-    CommonFriendsCardinalityTest firstTask = new CommonFriendsCardinalityTest(mMessageService, authobj, null, input);
+    CommonFriendsCardinalityTest firstTask = new CommonFriendsCardinalityTest(mMessageService, authobj.get(1), authobj.get(0), input);
     firstTask.execute(input);
     
 //    while(firstTask.getStatus() != Status.FINISHED) {};
-    
-    Log.d(TAG, "Num cardinality is "+firstTask.getNumCommonCard());
-    Toast.makeText(DiscoveryService.this, "Num cardinality is "+firstTask.getNumCommonCard(), Toast.LENGTH_LONG).show();
 //    
 //    // TODO: now just hard code to 0
 //    if(firstTask.getNumCommonCard() <= 0) {
@@ -635,6 +640,7 @@ public class DiscoveryService extends Service {
       mContactList = loadContactsFromFile(); 
     if (mAuthObj == null)
       mAuthObj = loadAuthorizationFromFile();
+    	
 
     if (mProfile == null || mContactList == null || mAuthObj == null) {
       Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
@@ -962,7 +968,6 @@ public class DiscoveryService extends Service {
  // This extends AsyncTask, and thus we provide the UI specific methods here
     private class CommonFriendsCardinalityTest extends ATWPSICA {
       
-      int commonCardinality = -1;
       String[] commonFriendsParam;
       AuthorizationObject commonFriendsAuth;
       
@@ -993,12 +998,8 @@ public class DiscoveryService extends Service {
       @Override
       public void onPostExecute(List<String> result) {
         Log.i(TAG, "Common friends cardinality protocol complete");
-        commonCardinality = result.size();
-        Log.i(TAG, commonCardinality+" common friends");
-      }
-      
-      public int getNumCommonCard() {
-        return commonCardinality;
+        Log.i(TAG, result.size()+" common friends");
+        Toast.makeText(DiscoveryService.this, "Num cardinality is "+result.size(), Toast.LENGTH_LONG).show();
       }
     }
     
