@@ -388,15 +388,9 @@ public class DiscoveryService extends Service {
     
     Log.i(TAG, "Start common friends cardinality");
     
-    CommonFriendsCardinalityTest firstTask = new CommonFriendsCardinalityTest(mMessageService, authobj.get(1), authobj.get(0), input);
+    // TODO: pretty ugly here passing all params for commonFriendsTest
+    CommonFriendsCardinalityTest firstTask = new CommonFriendsCardinalityTest(mMessageService, authobj.get(1), authobj.get(0), callback, interaction, input);
     firstTask.execute(input);
-    
-//    while(firstTask.getStatus() != Status.FINISHED) {};
-//    
-//    // TODO: now just hard code to 0
-//    if(firstTask.getNumCommonCard() <= 0) {
-//      return;
-//    }
 
     // This is really weird. Perhaps we should just inline the CommonFriendsTest, it might make more sense.
     // I also really don't like the use of callback here, but it works for now
@@ -970,14 +964,20 @@ public class DiscoveryService extends Service {
       
       String[] commonFriendsParam;
       AuthorizationObject commonFriendsAuth;
+      ProfileDownloadCallback callback;
+      Interaction interaction;
       
-      public CommonFriendsCardinalityTest(CommunicationService s, AuthorizationObject authObject, AuthorizationObject commonFriendsAuth, String... commonFriendsParam) {
+      public CommonFriendsCardinalityTest(CommunicationService s, AuthorizationObject authObject, 
+          AuthorizationObject commonFriendsAuth, ProfileDownloadCallback callback,
+          Interaction interaction, String... commonFriendsParam) {
         // check authObject type
         super(s, authObject);
 
         setBenchmark(Config.getBenchmark());
         this.commonFriendsParam = commonFriendsParam;
         this.commonFriendsAuth = commonFriendsAuth;
+        this.callback = callback;
+        this.interaction = interaction;
       }
       
       @Override
@@ -1000,6 +1000,10 @@ public class DiscoveryService extends Service {
         Log.i(TAG, "Common friends cardinality protocol complete");
         Log.i(TAG, result.size()+" common friends");
         Toast.makeText(DiscoveryService.this, "Num cardinality is "+result.size(), Toast.LENGTH_LONG).show();
+        
+        if(result.size() > 0) {
+          (new CommonFriendsTest(mMessageService, commonFriendsAuth, callback, interaction)).execute(commonFriendsParam);
+        }
       }
     }
     
