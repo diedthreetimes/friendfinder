@@ -67,6 +67,9 @@ public class AuthorizationObject extends Model implements Serializable {
 
   @Column
   private BigInteger R;
+  
+  @Column
+  private BigInteger R2; // for psi-ca protocol
 
   @Column
   private String auth;
@@ -109,6 +112,16 @@ public class AuthorizationObject extends Model implements Serializable {
     loadCert(ctx);
   }
 
+  public AuthorizationObject(Context ctx, BigInteger R, BigInteger R2, String auth) throws IOException, CertificateException {
+    super();
+
+    this.auth = auth;
+    this.R = R;
+    this.R2 = R2;
+    loadCert(ctx);
+  }
+
+
   public AuthorizationObject(Context ctx, BigInteger R, String auth) throws IOException, CertificateException {
     super();
 
@@ -141,9 +154,21 @@ public class AuthorizationObject extends Model implements Serializable {
     JSONObject jObject = new JSONObject(response);
 
     JSONObject msg = jObject.getJSONObject("psi_message");
+    
+    String Rstring = (String) msg.get("secret");
+    Log.d(TAG, "Rstring: "+Rstring);
+    String[] RstringList = Rstring.split(" ");
+    
+    if(RstringList.length > 2) {
+      Log.e(TAG, "there are more than "+RstringList.length+" R values");
+    } else if(RstringList.length == 2) {
+      R2 = decode( RstringList[1] );
+      type = AuthorizationObjectType.PSI_CA;
+      Log.d(TAG, "R1: "+RstringList[0]+"   R2: "+RstringList[1]);
+    }
 
     auth = msg.getString("signed_message");
-    R = decode( msg.getString("secret") );
+    R = decode( RstringList[0] );
 
     if (jObject.has("connections")) {
       JSONArray connections = jObject.getJSONArray("connections");
@@ -163,6 +188,7 @@ public class AuthorizationObject extends Model implements Serializable {
     } else {
       if(D) Log.d(TAG, "Signed identity not present.");
     }
+    if(D) Log.d(TAG, "Successfully dl auth obj");
   }
 
   private void loadCert(Context context) throws IOException, CertificateException {
@@ -241,6 +267,10 @@ public class AuthorizationObject extends Model implements Serializable {
   public String getAuth() {
     return this.auth;
   }
+  
+  public AuthorizationObjectType getType() {
+    return this.type;
+  }
 
   public List<String> getOriginalOrder() {
     return orderedInput;
@@ -299,5 +329,9 @@ public class AuthorizationObject extends Model implements Serializable {
     bbuf.put(hex);
 
     return new BigInteger(array);
+  }
+
+  public BigInteger getR2() {
+    return R2;
   }
 }

@@ -24,6 +24,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
+import android.os.AsyncTask.Status;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,6 +41,7 @@ import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWPSI;
+import com.sprout.friendfinder.crypto.ATWPSICA;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 import com.sprout.friendfinder.models.ContactsListObject;
@@ -285,8 +287,8 @@ public class DiscoveryService extends Service {
           }
           
           AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
-          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
-//          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
+//          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
           
           if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
@@ -351,7 +353,7 @@ public class DiscoveryService extends Service {
   // TODO: Rename
   public AuthorizationObject loadAuthorizationFromFile() {
     try {
-      return AuthorizationObject.getAvailableAuth(this, AuthorizationObjectType.PSI);
+      return AuthorizationObject.getAvailableAuth(this, AuthorizationObjectType.PSI_CA);
     } catch (Exception e) {
       Log.e(TAG, "Certificate could not be laoded. ", e);
       return null;
@@ -375,10 +377,25 @@ public class DiscoveryService extends Service {
     for( int i=0; i < contactList.size(); i++) {
       input[i] = contactList.get(i).getUid();
     }
+    
+    Log.i(TAG, "Start common friends cardinality");
+    
+    CommonFriendsCardinalityTest firstTask = new CommonFriendsCardinalityTest(mMessageService, authobj, null, input);
+    firstTask.execute(input);
+    
+//    while(firstTask.getStatus() != Status.FINISHED) {};
+    
+    Log.d(TAG, "Num cardinality is "+firstTask.getNumCommonCard());
+    Toast.makeText(DiscoveryService.this, "Num cardinality is "+firstTask.getNumCommonCard(), Toast.LENGTH_LONG).show();
+//    
+//    // TODO: now just hard code to 0
+//    if(firstTask.getNumCommonCard() <= 0) {
+//      return;
+//    }
 
     // This is really weird. Perhaps we should just inline the CommonFriendsTest, it might make more sense.
     // I also really don't like the use of callback here, but it works for now
-    (new CommonFriendsTest(mMessageService, authobj, callback, interaction)).execute(input);
+//    (new CommonFriendsTest(mMessageService, authobj, callback, interaction)).execute(input);
   }
   
   /*****************************/
@@ -721,6 +738,7 @@ public class DiscoveryService extends Service {
       run();// A bit strange way to loop through devcices, but it works
       return;
     } else {
+      Log.i(TAG, "Trying to connect device: "+mRunningDevice);
       mMessageService.connect(mRunningDevice);
     }
     
@@ -936,10 +954,51 @@ public class DiscoveryService extends Service {
         }
         
         interaction.sharedContacts = contacts;
-        
-        Log.i(TAG, "Showing notification");
     	
         callback.onComplete();
+      }
+    }
+    
+ // This extends AsyncTask, and thus we provide the UI specific methods here
+    private class CommonFriendsCardinalityTest extends ATWPSICA {
+      
+      int commonCardinality = -1;
+      String[] commonFriendsParam;
+      AuthorizationObject commonFriendsAuth;
+      
+      public CommonFriendsCardinalityTest(CommunicationService s, AuthorizationObject authObject, AuthorizationObject commonFriendsAuth, String... commonFriendsParam) {
+        // check authObject type
+        super(s, authObject);
+
+        setBenchmark(Config.getBenchmark());
+        this.commonFriendsParam = commonFriendsParam;
+        this.commonFriendsAuth = commonFriendsAuth;
+      }
+      
+      @Override
+      public List<String> doInBackground(String... params) {
+        try {
+          return super.doInBackground(params);
+        } catch (Exception e) {
+          Log.e(TAG, "CommonFriendsCardinalityProtocol failed, ", e);
+          return null;
+        }
+      }
+
+      @Override
+      public void onPreExecute() {
+        Log.i(TAG, "About to execute the Common friends cardinality protocol");
+      }
+
+      @Override
+      public void onPostExecute(List<String> result) {
+        Log.i(TAG, "Common friends cardinality protocol complete");
+        commonCardinality = result.size();
+        Log.i(TAG, commonCardinality+" common friends");
+      }
+      
+      public int getNumCommonCard() {
+        return commonCardinality;
       }
     }
     
