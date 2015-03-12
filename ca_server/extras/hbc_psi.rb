@@ -37,7 +37,7 @@ class HbcPsi
 
     if psi_ca # add psi_ca components 
       rus = bigrand(512) % @@q
-      shuffle_set = set.shuffle
+      shuffle_set = set.shuffle(random: SecureRandom.hex(23).to_i(16))
       plaintext_shuffle_set = shuffle_set.collect do |x|
         hash_str( self.modpow(hash_str(x, "\0"), rus, @@p).to_s(16), "\1")
       end
