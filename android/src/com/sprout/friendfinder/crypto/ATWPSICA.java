@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,7 +94,7 @@ public class ATWPSICA extends AbstractPSIProtocol<String, Void, List<String>> {
         return null;
       }
       yiPrime = peerSet.subList(0, peerSetSize/2); // yi
-      Collections.shuffle(yiPrime); // TODO: need to use secure shuffle?
+      Collections.shuffle(yiPrime, new SecureRandom()); // TODO: maybe should use SHA1PRNG
       wi = peerSet.subList(peerSetSize/2, peerSetSize);
       
       Log.d(TAG, "Size of yis: " + peerSetSize/2);
