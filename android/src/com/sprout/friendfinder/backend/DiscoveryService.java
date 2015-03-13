@@ -1001,6 +1001,7 @@ public class DiscoveryService extends Service {
         Log.i(TAG, result.size()+" common friends");
         Toast.makeText(DiscoveryService.this, "Num cardinality is "+result.size(), Toast.LENGTH_LONG).show();
         
+        // TODO: now just hardcode the policy and policy is the same on both sides and assume PSI-CA is done before running PSI
         if(result.size() > 0) {
           (new CommonFriendsTest(mMessageService, commonFriendsAuth, callback, interaction)).execute(commonFriendsParam);
         }
