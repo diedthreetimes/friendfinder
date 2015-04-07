@@ -82,7 +82,7 @@ class AuthorityController < ApplicationController
       end
       #resp[:connections] = c.profile( id: friends.first["id"], fields: %w(positions) )
 
-      resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v[:id]}, (!params[:psi_ca].nil? && params[:psi_ca]=="true"))
+      resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v[:id]}, params[:protocol])
 
       envelope = {}
       envelope[:profile] = c.profile
