@@ -1,4 +1,4 @@
-package com.sprout.friendfinder.backend;
+package com.sprout.friendfinder.crypto;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -7,12 +7,9 @@ import java.util.List;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.friendfinder.crypto.AuthorizationObject;
 
 public class ATWPSIProtocol extends AbstractATWPSIProtocol {
   private static String TAG = ATWPSIProtocol.class.getSimpleName();
-  protected AuthorizationObject authObj;
-  protected AuthorizationObject peerAuth;
 
 
   public ATWPSIProtocol(CommunicationService s, AuthorizationObject authObject) {

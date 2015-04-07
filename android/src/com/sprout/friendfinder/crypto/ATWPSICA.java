@@ -11,13 +11,18 @@ import java.util.List;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.friendfinder.backend.ATWPSIProtocol;
 
-//Authorized Two Way Psi cardinality
+/**
+ * Authorized Two Way Psi cardinality
+ * deprecated, please use ATWPSICAProtocol
+ * need to request auth object more than once
+ * @author norrathep
+ *
+ */
+@Deprecated
 public class ATWPSICA extends ATWPSIProtocol {
 
   private static String TAG = ATWPSICA.class.getSimpleName();
-  AuthorizationObject authObj;
 
   public ATWPSICA(CommunicationService s, AuthorizationObject authObject) {
     super(s, authObject); // This relies on the fact that the protocol is mirrored. 

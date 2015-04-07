@@ -1,4 +1,4 @@
-package com.sprout.friendfinder.backend;
+package com.sprout.friendfinder.crypto;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -7,8 +7,14 @@ import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.crypto.AbstractPSIProtocol;
-import com.sprout.friendfinder.crypto.AuthorizationObject;
 
+/**
+ * base class for ATWPSI/ATWPSICA protocols
+ * those protocols can be generalized into 5 steps
+ * 1) send auth 2) receive auth 3) send your msg 4) receive msg 5) compute intersections
+ * @author norrathep
+ *
+ */
 public abstract class AbstractATWPSIProtocol extends AbstractPSIProtocol<String, Void, List<String>> {
   private static String TAG = AbstractATWPSIProtocol.class.getSimpleName();
   AuthorizationObject authObj;

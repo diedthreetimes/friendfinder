@@ -31,7 +31,7 @@ public class AuthorizationDownloader {
     		"?oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
     		"&oauth_secret=" + secret + // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
     		"&include_connections=true" +
-    		"&psi_ca=" + (type == AuthorizationObjectType.PSI_CA)
+    		"&protocol=" + type.name().toLowerCase()
     		);
     
     if(D) Log.d(TAG, "Attempting a get of " + httpGet.getURI());
@@ -52,7 +52,7 @@ public class AuthorizationDownloader {
     String result = buffer.toString(); 
     bufReader.close(); 
     
-    return new AuthorizationObject(context, result);
+    return new AuthorizationObject(context, result, type);
   }
 
 }

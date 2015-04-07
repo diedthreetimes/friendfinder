@@ -84,7 +84,7 @@ public class AuthorizationObject extends Model implements Serializable {
   private transient ArrayList<String> orderedInput;
   
   public enum AuthorizationObjectType {
-	  PSI, PSI_CA;
+	  PSI, PSI_CA, PSI_CA_DEP;
   }
   
   @Column
@@ -142,14 +142,10 @@ public class AuthorizationObject extends Model implements Serializable {
     this.cert = other.cert;
     this.auth = auth;
   }
-  
-  public AuthorizationObject(Context ctx, String response, AuthorizationObjectType type) throws CertificateException, JSONException, IOException {
-	  this(ctx, response);
-	  this.type = type;
-  }
 
-  public AuthorizationObject(Context ctx, String response) throws JSONException, IOException, CertificateException {
+  public AuthorizationObject(Context ctx, String response, AuthorizationObjectType type) throws JSONException, IOException, CertificateException {
     super();
+    this.type = type;
     loadCert(ctx);
     JSONObject jObject = new JSONObject(response);
 
@@ -158,17 +154,14 @@ public class AuthorizationObject extends Model implements Serializable {
     String Rstring = (String) msg.get("secret");
     Log.d(TAG, "Rstring: "+Rstring);
     String[] RstringList = Rstring.split(" ");
-    
-    if(RstringList.length > 2) {
-      Log.e(TAG, "there are more than "+RstringList.length+" R values");
-    } else if(RstringList.length == 2) {
+
+    R = decode( RstringList[0] );
+    if(type.equals(AuthorizationObjectType.PSI_CA_DEP)) {
       R2 = decode( RstringList[1] );
-      type = AuthorizationObjectType.PSI_CA;
       Log.d(TAG, "R1: "+RstringList[0]+"   R2: "+RstringList[1]);
     }
 
     auth = msg.getString("signed_message");
-    R = decode( RstringList[0] );
 
     if (jObject.has("connections")) {
       JSONArray connections = jObject.getJSONArray("connections");

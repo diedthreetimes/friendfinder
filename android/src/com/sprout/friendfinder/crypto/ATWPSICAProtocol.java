@@ -1,4 +1,4 @@
-package com.sprout.friendfinder.backend;
+package com.sprout.friendfinder.crypto;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -9,7 +9,6 @@ import java.util.List;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.friendfinder.crypto.AuthorizationObject;
 
 public class ATWPSICAProtocol extends ATWPSIProtocol {
   
