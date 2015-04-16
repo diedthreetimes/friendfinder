@@ -1,5 +1,6 @@
 package com.sprout.friendfinder.ui;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,12 +37,12 @@ public abstract class InteractionBaseActivity extends ListActivity {
 	protected ItemAdapter adapter;
 	
 	@Override
-	public void onCreate(Bundle savedInstanceState) {        
+	public void onCreate(Bundle savedInstanceState) {   
     super.onCreate(savedInstanceState);
     
     // set listener for changing adapter values
 		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-	    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			
 			@Override
 			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
@@ -72,7 +73,9 @@ public abstract class InteractionBaseActivity extends ListActivity {
    */
   protected List<Interaction> getHistoryInteractions() {
 	  // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
-	  return new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
+    List<Interaction> pastInteractions = new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
+    pastInteractions.removeAll(getActiveInteractions());
+	  return new ArrayList<Interaction>(pastInteractions);
   }
   
   /**
