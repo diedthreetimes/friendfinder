@@ -75,7 +75,7 @@ public abstract class InteractionBaseActivity extends ListActivity {
 	  // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
     List<Interaction> pastInteractions = new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
     pastInteractions.removeAll(getActiveInteractions());
-	  return new ArrayList<Interaction>(pastInteractions);
+	  return pastInteractions;
   }
   
   /**
