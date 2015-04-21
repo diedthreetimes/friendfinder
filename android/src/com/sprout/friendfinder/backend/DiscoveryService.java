@@ -42,6 +42,7 @@ import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
+import com.sprout.finderlib.crypto.PrivateProtocol;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
@@ -440,7 +441,7 @@ public class DiscoveryService extends Service {
           stop();
         }
         else { 
-          if (D) Log.i(TAG, "Discovery completed. Devices found: "+result.getAddresses());
+          if (D) Log.i(TAG, "Discovery completed. Devices found: "+((result==null) ? null : result.getAddresses()));
           
           if (mState != STATE_CONNECTED && mState != STATE_RUNNING) {
             runAll(result);
@@ -698,6 +699,7 @@ public class DiscoveryService extends Service {
   
   // Called when discovery completes to run all discovered devices
   private void runAll(ScanResult discovered) {
+    Log.i(TAG, "LAST_SCAN_DEVICES_PREF: "+PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).getStringSet(LAST_SCAN_DEVICES_PREF, null));
     mLastScanResult = discovered;
     
     // sometimes it can be null
@@ -784,7 +786,6 @@ public class DiscoveryService extends Service {
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
     Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
     if(pendingExchangeAddr.contains(device.getAddress())) {
-      mMessageService.connect(device);
       return true;
     }
     
@@ -870,9 +871,10 @@ public class DiscoveryService extends Service {
             SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
             Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
             pendingExchangeAddr.remove(mRunningDevice.getAddress());
-            pref.edit().putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr).commit();
+            pref.edit().putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr).apply();
             
             // TODO: do something with interaction and save it
+            
             run();
           }
           
@@ -901,10 +903,11 @@ public class DiscoveryService extends Service {
           // maybe use another pref for adding into active list (or otto)
           Log.i(TAG, "adding "+mRunningDevice.getAddress()+" into active interaction list");
           SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
-          Set<String> lastScanAddrSet = mPrefs.getStringSet(LAST_SCAN_DEVICES_PREF, new HashSet<String>());
+          Set<String> lastScanAddrSet = new HashSet<String>(mPrefs.getStringSet(LAST_SCAN_DEVICES_PREF, new HashSet<String>()));
+          Log.i(TAG, "Before: "+lastScanAddrSet);
           lastScanAddrSet.add(mRunningDevice.getAddress());
-          Editor prefsEditor = mPrefs.edit();
-          prefsEditor.putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet).apply();
+          Log.i(TAG, "After: "+lastScanAddrSet);
+          PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet).apply();
           
           run();
         }
@@ -931,13 +934,10 @@ public class DiscoveryService extends Service {
     interaction.address = mRunningDevice.getAddress();
     interaction.timestamp = Calendar.getInstance();
     
-    // define all callback
-    Map<String, ProfileDownloadCallback> callbacks = new HashMap<String, ProfileDownloadCallback>();
-    List<String> allProtocols = ProtocolManager.getAllSupportedProtocols();
-    for(String protocol : allProtocols) callbacks.put(protocol, getProfileDownloadCallback(protocol, interaction));
+    ProfileDownloadCallback callback = getProfileDownloadCallback(protocolType, interaction);
     
     Log.i(TAG, "about to run protocol "+protocolType);
-    ProtocolManager.runProtocol(protocolType, mAuthObj, callbacks, this, mMessageService, mRunningDevice, mContactList, interaction);
+    ProtocolManager.runProtocol(protocolType, mAuthObj, callback, this, mMessageService, mRunningDevice, mContactList, interaction);
   }
 
   private void onDisabled() {

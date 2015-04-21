@@ -13,6 +13,7 @@ import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
+import com.sprout.finderlib.crypto.PrivateProtocol;
 import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
@@ -22,6 +23,7 @@ import com.sprout.friendfinder.ui.InteractionItem;
 
 public class ProtocolManager {
   
+  // going to add protocol type/policy type in policy when implemented
   public static String PSICA = "PSICA";
   public static String PSI = "PSI";
   public static String IDX = "IDENTITY_EXCHANGE";
@@ -37,6 +39,12 @@ public class ProtocolManager {
     return allProts;
   }
   
+  /**
+   * get type of protocol based on status of connected device and user's policy
+   * @param context
+   * @param connectedDevice
+   * @return
+   */
   public static String getProtocolType(Context context, Device connectedDevice) {
     Log.i(TAG, "getting type of protocol");
     // first check if the identity exchange button was clicked or policy allowed it
@@ -55,7 +63,7 @@ public class ProtocolManager {
   }
 
   public static void runProtocol(String protocol, Map<AuthorizationObjectType, AuthorizationObject> authMaps,
-      Map<String, ProfileDownloadCallback> callbacks, final Context c, 
+      ProfileDownloadCallback callback, final Context c, 
       CommunicationService cs, Device connectedDevice, List<ProfileObject> contactList,
       Interaction interaction) throws Exception {
     
@@ -78,10 +86,10 @@ public class ProtocolManager {
       }
       
       Log.i(TAG, "Start common friends cardinality");
-      new CommonFriendsCardinalityTest(cs, authMaps.get(AuthorizationObjectType.PSI_CA), authMaps.get(AuthorizationObjectType.PSI), callbacks.get(PSICA), interaction, input).execute(input);
+      new CommonFriendsCardinalityTest(cs, authMaps.get(AuthorizationObjectType.PSI_CA), authMaps.get(AuthorizationObjectType.PSI), callback, interaction, input).execute(input);
     } else if(protocol.equals(IDX)) {
       Log.i(TAG, "Start identity exchange");
-      new IdentityExchangeProtocol(cs, c, connectedDevice, callbacks.get(IDX)).execute();
+      new IdentityExchangeProtocol(cs, c, connectedDevice, callback).execute();
     } else {
       throw new Exception("Invalid protocol: "+protocol);
     }
