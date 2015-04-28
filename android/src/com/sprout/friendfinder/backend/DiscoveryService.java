@@ -38,11 +38,11 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.activeandroid.query.Select;
 import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
-import com.sprout.finderlib.crypto.PrivateProtocol;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
@@ -52,6 +52,7 @@ import com.sprout.friendfinder.crypto.protocols.ProtocolManager;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
+import com.sprout.friendfinder.ui.InteractionBaseActivity;
 import com.sprout.friendfinder.ui.InteractionItem;
 import com.sprout.friendfinder.ui.LoginActivity;
 
@@ -760,7 +761,7 @@ public class DiscoveryService extends Service {
     mRunningDevice = i.next();
     i.remove();
     
-    if(!shouldConnect(mRunningDevice)) {
+    if(ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice).equals(ProtocolManager.NONE)) {
       run();
     } else {
       Log.i(TAG, "Trying to connect device: "+mRunningDevice);
@@ -768,29 +769,6 @@ public class DiscoveryService extends Service {
     }
     
     // Upon establishing a connection we enter the connected() state
-  }
-  
-  /**
-   * determine if we should try to connect to this device
-   * @param device
-   * @return
-   */
-  private boolean shouldConnect(Device device) {
-    
-    // device not in cache, we should connect
-    if( !mDeviceCache.contains(device) ) {
-      return true;
-    }
-    
-    // check if we want to do identity exchange with device in cache
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
-    Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
-    if(pendingExchangeAddr.contains(device.getAddress())) {
-      return true;
-    }
-    
-    if(D) Log.d(TAG, "Device in cache and not need to exchange identity, avoiding. " + device);
-    return false;
   }
   
   private void connected() {    
@@ -823,7 +801,7 @@ public class DiscoveryService extends Service {
     setState(STATE_CONNECTED);
     
     // figure out what protocol "I" want to run with this device
-    final String protocolType = ProtocolManager.getProtocolType(this, mRunningDevice);
+    final String protocolType = ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice);
     Log.i(TAG, "before negotiation phase, I want to run "+protocolType+" with device: "+mRunningDevice);
     
     // start negotiation phase
@@ -861,6 +839,8 @@ public class DiscoveryService extends Service {
             if(D) Log.i(TAG, "Error trying to exchange identity with device "+mRunningDevice);
             
             // TODO: do something with interaction and save it
+            interaction.failed = true;
+            interaction.save();
             run();
           }
           
@@ -869,11 +849,28 @@ public class DiscoveryService extends Service {
             if(V) Log.i(TAG, "Identity exchange complete. Remove "+mRunningDevice+" from EXCHANGE_IDENTITY_ADDR");
             //remove addr in sharedpref
             SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+            
             Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
             pendingExchangeAddr.remove(mRunningDevice.getAddress());
-            pref.edit().putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr).apply();
+
+            // TODO: have to revisit this for active interaction
+            // we need to add this when we are the one being discovered - scanResult is null
+            // maybe use another pref for adding into active list (or otto)
+            if(V) Log.i(TAG, "adding "+mRunningDevice.getAddress()+" into active interaction list");
+            Set<String> lastScanAddrSet = new HashSet<String>(pref.getStringSet(LAST_SCAN_DEVICES_PREF, new HashSet<String>()));
+            lastScanAddrSet.add(mRunningDevice.getAddress());
+
+            pref.edit()
+            .putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr)
+            .putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet)
+            .putBoolean(InteractionBaseActivity.RELOAD_ADAPTER_PREF, true)
+            .apply();
             
             // TODO: do something with interaction and save it
+            interaction.failed = false;
+            interaction.save();
+            
+            Log.i(TAG, "Saving interaction with profile "+interaction.profile.toString());
             
             run();
           }
@@ -904,9 +901,7 @@ public class DiscoveryService extends Service {
           Log.i(TAG, "adding "+mRunningDevice.getAddress()+" into active interaction list");
           SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
           Set<String> lastScanAddrSet = new HashSet<String>(mPrefs.getStringSet(LAST_SCAN_DEVICES_PREF, new HashSet<String>()));
-          Log.i(TAG, "Before: "+lastScanAddrSet);
           lastScanAddrSet.add(mRunningDevice.getAddress());
-          Log.i(TAG, "After: "+lastScanAddrSet);
           PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet).apply();
           
           run();
@@ -930,9 +925,15 @@ public class DiscoveryService extends Service {
   }
   
   private void runProtocol(String protocolType) throws Exception  {
-    final Interaction interaction = new Interaction();
-    interaction.address = mRunningDevice.getAddress();
-    interaction.timestamp = Calendar.getInstance();
+    final Interaction interaction;
+    if(protocolType.equals(ProtocolManager.IDX)) {
+      //TODO: using address is wrong, maybe need to use id instead
+      interaction = (Interaction) new Select().from(Interaction.class).where("address=?", mRunningDevice.getAddress()).orderBy("timestamp DESC").executeSingle();
+    } else {
+      interaction = new Interaction();
+      interaction.address = mRunningDevice.getAddress();
+      interaction.timestamp = Calendar.getInstance();
+    }
     
     ProfileDownloadCallback callback = getProfileDownloadCallback(protocolType, interaction);
     

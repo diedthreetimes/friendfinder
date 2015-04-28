@@ -1,6 +1,5 @@
 package com.sprout.friendfinder.ui;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +32,7 @@ import android.widget.ListView;
 public abstract class InteractionBaseActivity extends ListActivity {
 
 	private static final String TAG = InteractionBaseActivity.class.getSimpleName();
+	public static final String RELOAD_ADAPTER_PREF = "reload_adapter_pref";
 	protected OnSharedPreferenceChangeListener listener;
 	protected ItemAdapter adapter;
 	
@@ -51,6 +51,14 @@ public abstract class InteractionBaseActivity extends ListActivity {
 				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
 					reloadAdapter();
 					adapter.notifyDataSetChanged();
+				} else if(key.equals(RELOAD_ADAPTER_PREF)) {
+				  // TODO: better way to do this?
+				  SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(InteractionBaseActivity.this);
+				  if(mPrefs.getBoolean(RELOAD_ADAPTER_PREF, true)) {
+				    reloadAdapter();
+				    adapter.notifyDataSetChanged();
+				    mPrefs.edit().putBoolean(RELOAD_ADAPTER_PREF, false).apply();
+				  }
 				}
 				
 			}
@@ -66,16 +74,24 @@ public abstract class InteractionBaseActivity extends ListActivity {
 	 * where the activity loads adapter
 	 */
 	protected abstract void reloadAdapter();
-	
+
+  /**
+   * 
+   * @return all history of interactions
+   */
+  protected List<Interaction> getHistoryInteractions(List<Interaction> activeInteraction) {
+    // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
+    List<Interaction> pastInteractions = new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
+    pastInteractions.removeAll(activeInteraction);
+    return pastInteractions;
+  }
 	/**
    * 
    * @return all history of interactions
    */
   protected List<Interaction> getHistoryInteractions() {
 	  // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
-    List<Interaction> pastInteractions = new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
-    pastInteractions.removeAll(getActiveInteractions());
-	  return pastInteractions;
+	  return getHistoryInteractions(getActiveInteractions());
   }
   
   /**

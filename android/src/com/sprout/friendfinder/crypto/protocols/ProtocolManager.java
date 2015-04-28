@@ -13,7 +13,7 @@ import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
-import com.sprout.finderlib.crypto.PrivateProtocol;
+import com.sprout.friendfinder.backend.DeviceCache;
 import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
@@ -27,6 +27,7 @@ public class ProtocolManager {
   public static String PSICA = "PSICA";
   public static String PSI = "PSI";
   public static String IDX = "IDENTITY_EXCHANGE";
+  public static String NONE = "NONE";
   
   static final String TAG = ProtocolManager.class.getSimpleName();
   
@@ -45,8 +46,9 @@ public class ProtocolManager {
    * @param connectedDevice
    * @return
    */
-  public static String getProtocolType(Context context, Device connectedDevice) {
+  public static String getProtocolType(Context context, DeviceCache deviceCache, Device connectedDevice) {
     Log.i(TAG, "getting type of protocol");
+    
     // first check if the identity exchange button was clicked or policy allowed it
     // TODO: implement policy, now just check idx button
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
@@ -55,16 +57,22 @@ public class ProtocolManager {
       Log.i(TAG, "return IDX");
       return IDX;
     }
-    
-    // assume if not IDX, then return PSICA
-    Log.i(TAG, "return PSICA");
-    return PSICA;
+
+    // device not in cache, we should connect
+    // TODO: depend on PSI
+    if( !deviceCache.contains(connectedDevice) ) {
+      Log.i(TAG, "return PSICA");
+      return PSICA;
+    }
+
+    Log.i(TAG, "return NONE");
+    return NONE;
     
   }
 
   public static void runProtocol(String protocol, Map<AuthorizationObjectType, AuthorizationObject> authMaps,
-      ProfileDownloadCallback callback, final Context c, 
-      CommunicationService cs, Device connectedDevice, List<ProfileObject> contactList,
+      final ProfileDownloadCallback callback, final Context c, 
+      final CommunicationService cs, final Device connectedDevice, List<ProfileObject> contactList,
       Interaction interaction) throws Exception {
     
     if(protocol.equals(PSICA)) {
@@ -89,7 +97,7 @@ public class ProtocolManager {
       new CommonFriendsCardinalityTest(cs, authMaps.get(AuthorizationObjectType.PSI_CA), authMaps.get(AuthorizationObjectType.PSI), callback, interaction, input).execute(input);
     } else if(protocol.equals(IDX)) {
       Log.i(TAG, "Start identity exchange");
-      new IdentityExchangeProtocol(cs, c, connectedDevice, callback).execute();
+      new IdentityExchangeProtocol(cs, callback, authMaps.get(AuthorizationObjectType.PSI_CA), interaction).execute();
     } else {
       throw new Exception("Invalid protocol: "+protocol);
     }
