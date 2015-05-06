@@ -3,7 +3,9 @@ package com.sprout.friendfinder.crypto;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import android.util.Log;
@@ -30,6 +32,7 @@ public class ATWPSICAProtocol extends ATWPSIProtocol {
   @Override
   protected List<BigInteger> sendMessage(CommunicationService s) {
     List<BigInteger> peerMessage = peerAuth.getData();
+    Collections.shuffle(peerMessage, new SecureRandom()); // shuffle the message for security purpose
     List<BigInteger> T = new ArrayList<BigInteger>();
     for (BigInteger t1i : peerMessage) {
       t1i = sha1hash(t1i.modPow(authObj.getR(), p).toString(16)); // the only change...
