@@ -136,7 +136,9 @@ public class ProfileObject extends Model implements Serializable {
 	} */
 
 	public String getDisplayName() {
-		return firstName + " " + lastName;
+	  // TODO: Perhaps give the @displayName in addition to the name
+	  return firstName; // Twitter doesn't seperate first and last names
+		//return firstName + " " + lastName;
 	}
 	
 	@Override
