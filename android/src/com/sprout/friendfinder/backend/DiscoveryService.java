@@ -669,6 +669,10 @@ public class DiscoveryService extends Service {
   }
   
   private void notifyChanges() {
+	if(mLastScanResult == null) {
+		Log.i(TAG, "mLastScanDevice is null - most likely you are being discovered or no device found in last scan");
+		return;
+	}
     SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
     Editor prefsEditor = mPrefs.edit();
     prefsEditor.putStringSet(LAST_SCAN_DEVICES_PREF, mLastScanDevices.getAddresses()).apply();
@@ -774,6 +778,7 @@ public class DiscoveryService extends Service {
         // show notification on success after getting address
         ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, interaction);
         Log.i(TAG, "saving interaction at addr: "+interaction.address);
+
         run();
       }
 
