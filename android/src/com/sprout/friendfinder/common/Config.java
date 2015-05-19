@@ -8,7 +8,7 @@ package com.sprout.friendfinder.common;
 public class Config {
   
   private static boolean benchmark = false;
-  private static boolean local = false;
+  private static boolean local = true;
   
   public static boolean getBenchmark() {
     return benchmark;
@@ -16,7 +16,7 @@ public class Config {
   
   public static String getHost() {
     if (local) { 
-      return "localhost:3001";
+      return "creepyer.ics.uci.edu:3000";
     } else {
       return "344ee97c.ngrok.com:80";
     }
