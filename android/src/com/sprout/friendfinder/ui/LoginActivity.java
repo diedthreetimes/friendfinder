@@ -47,7 +47,7 @@ public class LoginActivity extends Activity {
 
       @Override
       public void onError(SocialAuthError er) {
-        if(D) Log.d(TAG, "Error", er);
+        if(D) Log.d(TAG, "Error", er.getInnerException());
 
         finish();
       }
@@ -60,8 +60,8 @@ public class LoginActivity extends Activity {
       }
     });
 
-    adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
-    adapter.authorize(this, Provider.LINKEDIN);
+    adapter.addProvider(Provider.TWITTER, R.drawable.twitter);
+    adapter.authorize(this, Provider.TWITTER);
   }
 
 }
