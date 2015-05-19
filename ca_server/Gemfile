@@ -40,5 +40,6 @@ gem 'pry'
 
 
 gem 'linkedin'
+gem 'twitter'
 
 gem 'rb-readline', '~> 0.4.2'
