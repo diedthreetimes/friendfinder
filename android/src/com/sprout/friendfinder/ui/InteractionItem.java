@@ -1,15 +1,20 @@
 package com.sprout.friendfinder.ui;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
+import com.sprout.friendfinder.ui.baseui.Item;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,9 +23,11 @@ import android.view.View.OnClickListener;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class InteractionItem implements Item {
+  
+  public static final String EXTRA_DEVICE_ADDR = "extra_device_addr";
+  public static final String EXCHANGE_IDENTITY_ADDR = "exchange_identity_addr";
 	
 	Interaction interaction;
 
@@ -66,17 +73,22 @@ public class InteractionItem implements Item {
 	    }
 	    
 	    if (interaction != null && interaction.sharedContacts != null) {
-	      viewHolder.contactsSize.setText(context.getString(R.string.number_of_contacts,
-	    		  interaction.sharedContacts.getContactList().size()));
+	      viewHolder.contactsSize.setText(context.getString(R.string.number_of_contacts, interaction.sharedContacts.getContactList().size()));
 	    }
 	    
 	    // TODO: Set on click listener for the two buttons
 	    viewHolder.exchangeIdentity.setOnClickListener(new OnClickListener() {
-	        @Override
-	        public void onClick(View v) {
-	            // TODO Auto-generated method stub
-	        	Toast.makeText(v.getContext(), "exchanged identity", Toast.LENGTH_LONG).show();
-	        }
+
+        @Override
+        public void onClick(View v) {
+          String address = interaction.address;
+          SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
+          Set<String> pendingExchangeAddr = pref.getStringSet(EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
+          pendingExchangeAddr.add(address);
+          Log.i(TAG, "pendingExchangeAddr contains "+pendingExchangeAddr);
+          PreferenceManager.getDefaultSharedPreferences(context).edit().putStringSet(EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr).commit();
+        }
+	      
 	    });
 
 	    if (interaction.profile == null) {

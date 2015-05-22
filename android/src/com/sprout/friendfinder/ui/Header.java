@@ -2,6 +2,7 @@ package com.sprout.friendfinder.ui;
 
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
+import com.sprout.friendfinder.ui.baseui.Item;
 
 import android.view.LayoutInflater;
 import android.view.View;

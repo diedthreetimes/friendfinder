@@ -1,4 +1,4 @@
-package com.sprout.friendfinder.ui;
+package com.sprout.friendfinder.ui.baseui;
 
 import java.util.HashSet;
 import java.util.List;
@@ -8,6 +8,9 @@ import com.activeandroid.query.Select;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.DiscoveryService;
 import com.sprout.friendfinder.models.Interaction;
+import com.sprout.friendfinder.ui.InteractionItem;
+import com.sprout.friendfinder.ui.IntersectionResultsActivity;
+import com.sprout.friendfinder.ui.ItemAdapter;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
 import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
@@ -32,16 +35,17 @@ import android.widget.ListView;
 public abstract class InteractionBaseActivity extends ListActivity {
 
 	private static final String TAG = InteractionBaseActivity.class.getSimpleName();
+	public static final String RELOAD_ADAPTER_PREF = "reload_adapter_pref";
 	protected OnSharedPreferenceChangeListener listener;
 	protected ItemAdapter adapter;
 	
 	@Override
-	public void onCreate(Bundle savedInstanceState) {        
+	public void onCreate(Bundle savedInstanceState) {   
     super.onCreate(savedInstanceState);
     
     // set listener for changing adapter values
 		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-	    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			
 			@Override
 			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
@@ -50,6 +54,14 @@ public abstract class InteractionBaseActivity extends ListActivity {
 				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
 					reloadAdapter();
 					adapter.notifyDataSetChanged();
+				} else if(key.equals(RELOAD_ADAPTER_PREF)) {
+				  // TODO: better way to do this?
+				  SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(InteractionBaseActivity.this);
+				  if(mPrefs.getBoolean(RELOAD_ADAPTER_PREF, true)) {
+				    reloadAdapter();
+				    adapter.notifyDataSetChanged();
+				    mPrefs.edit().putBoolean(RELOAD_ADAPTER_PREF, false).apply();
+				  }
 				}
 				
 			}
@@ -65,14 +77,24 @@ public abstract class InteractionBaseActivity extends ListActivity {
 	 * where the activity loads adapter
 	 */
 	protected abstract void reloadAdapter();
-	
+
+  /**
+   * 
+   * @return all history of interactions
+   */
+  protected List<Interaction> getHistoryInteractions(List<Interaction> activeInteraction) {
+    // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
+    List<Interaction> pastInteractions = new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
+    pastInteractions.removeAll(activeInteraction);
+    return pastInteractions;
+  }
 	/**
    * 
    * @return all history of interactions
    */
   protected List<Interaction> getHistoryInteractions() {
 	  // TODO: need .where("failed=0 and infoExchanged=0") or other boolean checking?
-	  return new Select().from(Interaction.class).orderBy("timestamp DESC").execute();
+	  return getHistoryInteractions(getActiveInteractions());
   }
   
   /**
