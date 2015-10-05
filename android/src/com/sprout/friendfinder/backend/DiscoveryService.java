@@ -52,7 +52,7 @@ import com.sprout.friendfinder.crypto.protocols.ProtocolManager;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
-import com.sprout.friendfinder.ui.InteractionBaseActivity;
+import com.sprout.friendfinder.ui.baseui.InteractionBaseActivity;
 import com.sprout.friendfinder.ui.InteractionItem;
 import com.sprout.friendfinder.ui.LoginActivity;
 
@@ -248,11 +248,11 @@ public class DiscoveryService extends Service {
       */
     
     if (D) Log.i(TAG, "Login called, about to authorize");
-    adapter.authorizeIfAvailable(this, Provider.LINKEDIN);
+    adapter.authorizeIfAvailable(this, Provider.TWITTER);
     
     // After we call authorize, callbacks are passed in the DialogListner passed when the adapter is intitialized
     
-    if (D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.LINKEDIN));
+    if (D) Log.d(TAG, "Local token is " + adapter.getToken(Provider.TWITTER));
   }
 
   private void logout() {
@@ -263,7 +263,7 @@ public class DiscoveryService extends Service {
     if(D) Log.i(TAG, "Loggingout from socialauth");
     try {
       // TODO: Does this actually log you out. It appears like it does not
-      adapter.signOut(Provider.LINKEDIN.name());    
+      adapter.signOut(Provider.TWITTER.name());    
     } catch (Exception e) {
       Log.e(TAG,"Could not logout. Are you logged in", e);
     }
@@ -296,7 +296,7 @@ public class DiscoveryService extends Service {
             Log.d(TAG, "Write profile id to preferences failed");
           }
           
-          AccessGrant grant = adapter.getAccessGrant(Provider.LINKEDIN);
+          AccessGrant grant = adapter.getAccessGrant(Provider.TWITTER);
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA_DEP).save();
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
@@ -592,7 +592,7 @@ public class DiscoveryService extends Service {
       }
     });
 
-    adapter.addProvider(Provider.LINKEDIN, R.drawable.linkedin);
+    adapter.addProvider(Provider.TWITTER, R.drawable.twitter);
     login(); // Will start the callback process 
   }
   

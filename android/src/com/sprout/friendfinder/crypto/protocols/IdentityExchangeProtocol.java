@@ -14,7 +14,6 @@ import com.sprout.friendfinder.models.ProfileObject;
 
 /**
  * identity exchange protocol
- * TODO: now its a dummy protocol, doesnt do anything yet
  * @author norrathep
  *
  */
