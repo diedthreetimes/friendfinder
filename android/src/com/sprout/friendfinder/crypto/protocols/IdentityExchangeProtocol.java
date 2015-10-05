@@ -1,18 +1,16 @@
 package com.sprout.friendfinder.crypto.protocols;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.brickred.socialauth.Profile;
+import org.json.JSONObject;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.finderlib.communication.Device;
 import com.sprout.finderlib.crypto.PrivateProtocol;
 import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
-import com.sprout.friendfinder.ui.InteractionItem;
+import com.sprout.friendfinder.crypto.AuthorizationObject;
+import com.sprout.friendfinder.models.Interaction;
+import com.sprout.friendfinder.models.ProfileObject;
 
 /**
  * identity exchange protocol
@@ -20,18 +18,21 @@ import com.sprout.friendfinder.ui.InteractionItem;
  * @author norrathep
  *
  */
-public class IdentityExchangeProtocol extends PrivateProtocol<Void, Void, String> {
+public class IdentityExchangeProtocol extends PrivateProtocol<Void, Void, ProfileObject> {
   
-  private Context context;
   private static final String TAG = IdentityExchangeProtocol.class.getSimpleName();
-  private Device mRunningDevice;
   private ProfileDownloadCallback callback;
+  private AuthorizationObject authObj;
+  private Interaction interaction;
+  private CommunicationService com;
   
-  public IdentityExchangeProtocol(CommunicationService s, Context c, Device connectedDevice, ProfileDownloadCallback callback) {
+  public IdentityExchangeProtocol(CommunicationService s, ProfileDownloadCallback callback, 
+      AuthorizationObject authObj, Interaction interaction) {
     this(IdentityExchangeProtocol.class.getSimpleName(), s, true);
-    context = c;
-    mRunningDevice = connectedDevice;
     this.callback = callback;
+    this.authObj = authObj;
+    this.interaction = interaction;
+    this.com = s;
   }
 
   protected IdentityExchangeProtocol(String testName, CommunicationService s,
@@ -40,29 +41,62 @@ public class IdentityExchangeProtocol extends PrivateProtocol<Void, Void, String
   }
 
   @Override
-  protected String conductClientTest(CommunicationService s, Void... input) {
+  protected ProfileObject conductClientTest(CommunicationService s, Void... input) {
     return conductServerTest(s, input);
   }
 
   @Override
-  protected String conductServerTest(CommunicationService s, Void... input) {
-    s.write("Your device is "+mRunningDevice.getAddress()+" "+mRunningDevice.getName());
-    String message = s.readString();
-    Log.i(TAG, "receive message: "+message);
+  protected ProfileObject conductServerTest(CommunicationService s, Void... input) {
+    s.write(authObj.getAuth());
+    s.write(authObj.getIdentity());
     
-    //remove addr in sharedpref
-    SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
-    Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
-    pendingExchangeAddr.remove(mRunningDevice.getAddress());
-    pref.edit().putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr).commit();
-    return message;
+    String peerAuthString = s.readString();
+    String peerAuthIdentity = s.readString();
+    
+    // TODO: what if they send trash data here... then he will know my identity but i dont know his..
+    AuthorizationObject peerAuth = new AuthorizationObject(authObj, peerAuthString, peerAuthIdentity);
+    
+    if(peerAuth.verifyIdentity()) {
+      Log.d(TAG, "Identity verification succeeded");
+    } else {
+      Log.d(TAG, "Identity verification failed");
+      return null;
+    }
+    
+    String peerIdentity = peerAuth.getDecodedIdentity();
+    Profile p = new Profile();
+    
+    try {
+      JSONObject jObject = new JSONObject(peerIdentity);
+      JSONObject msg = jObject.getJSONObject("profile");
+      
+      Log.i(TAG, "msg: "+msg.toString());
+      
+      p.setFirstName((String) msg.get("first_name"));
+      p.setLastName((String) msg.get("last_name"));
+      p.setValidatedId((String) msg.get("id"));
+      
+      JSONObject avatar = msg.getJSONObject("avatar");
+      p.setProfileImageURL((String) avatar.get("url"));
+      
+    } catch(Exception e) {
+      e.printStackTrace();
+      return null;
+    }
+    
+    ProfileObject po = new ProfileObject(p);
+//    po.getProfileImage(context) TODO: check with hash
+    
+    Log.i(TAG, "Identity: "+p.toString());
+    
+    return po;
   }
 
   @Override
   protected void loadSharedKeys() {}
   
   @Override
-  public String doInBackground(Void... params) {
+  public ProfileObject doInBackground(Void... params) {
     try {
       return super.doInBackground(params);
     } catch (Exception e) {
@@ -74,12 +108,20 @@ public class IdentityExchangeProtocol extends PrivateProtocol<Void, Void, String
   @Override
   public void onPreExecute() {
     Log.i(TAG, "About to execute the identity exchange protocol");
+    
+    
   }
 
   @Override
-  public void onPostExecute(String result) {
+  public void onPostExecute(ProfileObject result) {
     if(result != null) {
       Log.i(TAG, "identity exchange complete");
+      
+      result.save();
+      Log.i(TAG, "result: "+result.toString());
+      
+      interaction.profile = result;
+      
       callback.onComplete();
     } else {
       Log.i(TAG, "identity exchange fail");
