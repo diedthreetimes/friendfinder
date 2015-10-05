@@ -15,6 +15,8 @@ import android.widget.Toast;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.DiscoveryService;
 import com.sprout.friendfinder.models.Interaction;
+import com.sprout.friendfinder.ui.baseui.InteractionBaseActivity;
+import com.sprout.friendfinder.ui.baseui.Item;
 
 
 // TODO: Rename this to HistoryActivity

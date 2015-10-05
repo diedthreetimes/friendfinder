@@ -8,6 +8,7 @@ import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
+import com.sprout.friendfinder.ui.baseui.Item;
 
 import android.content.Context;
 import android.content.SharedPreferences;
