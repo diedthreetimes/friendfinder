@@ -1,5 +1,6 @@
-package com.sprout.friendfinder.ui;
+package com.sprout.friendfinder.ui.baseui;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -7,15 +8,25 @@ import java.util.Set;
 import com.activeandroid.query.Select;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.DiscoveryService;
+import com.sprout.friendfinder.backend.DiscoveryService.LocalBinder;
 import com.sprout.friendfinder.models.Interaction;
+import com.sprout.friendfinder.ui.InteractionItem;
+import com.sprout.friendfinder.ui.IntersectionResultsActivity;
+import com.sprout.friendfinder.ui.ItemAdapter;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
 import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
 import android.app.ListActivity;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
@@ -29,46 +40,90 @@ import android.widget.ListView;
  * @author Oak
  *
  */
-public abstract class InteractionBaseActivity extends ListActivity {
+public abstract class InteractionBaseActivity extends BaseListActivity {
 
 	private static final String TAG = InteractionBaseActivity.class.getSimpleName();
-	public static final String RELOAD_ADAPTER_PREF = "reload_adapter_pref";
 	protected OnSharedPreferenceChangeListener listener;
 	protected ItemAdapter adapter;
+	
+//	private BroadcastReceiver mReceiver;
+
+  DiscoveryService mService;
+  boolean mBound = false;
+  
+  private class ReloadAdapterReceiver extends BroadcastReceiver {
+
+    @Override
+    public void onReceive(Context arg0, Intent arg1) {
+      Log.i(TAG, "In reload adapter receiver");
+      reloadAdapter();
+      adapter.notifyDataSetChanged();
+    }
+
+   }
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {   
     super.onCreate(savedInstanceState);
     
-    // set listener for changing adapter values
-		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-			
-			@Override
-			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-					String key) {
-				Log.i(TAG, "pref change for key: "+key);
-				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
-					reloadAdapter();
-					adapter.notifyDataSetChanged();
-				} else if(key.equals(RELOAD_ADAPTER_PREF)) {
-				  // TODO: better way to do this?
-				  SharedPreferences mPrefs = PreferenceManager.getDefaultSharedPreferences(InteractionBaseActivity.this);
-				  if(mPrefs.getBoolean(RELOAD_ADAPTER_PREF, true)) {
-				    reloadAdapter();
-				    adapter.notifyDataSetChanged();
-				    mPrefs.edit().putBoolean(RELOAD_ADAPTER_PREF, false).apply();
-				  }
-				}
-				
-			}
-		};
-		mPrefs.registerOnSharedPreferenceChangeListener(listener);
-
+//    // set listener for changing adapter values
+//		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+//    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+//			
+//			@Override
+//			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+//					String key) {
+//				Log.i(TAG, "pref change for key: "+key);
+//				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
+//					reloadAdapter();
+//					adapter.notifyDataSetChanged();
+//				}
+//				
+//			}
+//		};
+//		mPrefs.registerOnSharedPreferenceChangeListener(listener);
+		
     // Bind to our new adapter.
     reloadAdapter();
+    
     setListAdapter(adapter); 
 	}
+  
+	@Override
+	public void onStart() {
+	  super.onStart();
+
+//    Intent intent = new Intent(this, DiscoveryService.class);
+//    bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+//    
+//    mReceiver = new ReloadAdapterReceiver();
+//    registerReceiver(mReceiver, new IntentFilter(DiscoveryService.LAST_SCAN_DEVICES_PREF));
+//    Log.i(TAG, "succesfully register");
+	}
+	
+//  @Override
+//  protected void onStop() {
+//    super.onStop();
+//    // Unbind from the service
+//    if (mBound) {
+//        unbindService(mConnection);
+//        mBound = false;
+//    }
+//    unregisterReceiver(mReceiver);
+//  }
+//	
+//	public void onResume()
+//  {
+////    IntentFilter filter = new IntentFilter();
+////    filter.addAction(INTENT_ACTON_RESET_ADAPTER);
+////    registerReceiver(receiver, filter);  
+//    super.onResume();
+//  }
+//
+//  public void onPause()
+//  {
+//    super.onPause();
+//  }
 	
 	/**
 	 * where the activity loads adapter
@@ -100,10 +155,15 @@ public abstract class InteractionBaseActivity extends ListActivity {
    * @return
    */
   protected List<Interaction> getActiveInteractions() {
+//    if(mBound) {
+//      List<Interaction> activeInteractions = Interaction.getInteractionFromAddress(mService.getLastScanAddrs(), true);
+//      return activeInteractions;
+//    }
     SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
     Set<String> lastScanAddr = mPrefs.getStringSet(DiscoveryService.LAST_SCAN_DEVICES_PREF, new HashSet<String>());
 	  List<Interaction> activeInteractions = Interaction.getInteractionFromAddress(lastScanAddr, true) ;
 	  return activeInteractions;
+//    return new ArrayList<Interaction>();
   }
 	
 	@Override
@@ -135,4 +195,22 @@ public abstract class InteractionBaseActivity extends ListActivity {
     intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
     startActivity(intent);
   }
+  
+//  /** Defines callbacks for service binding, passed to bindService() */
+//  private ServiceConnection mConnection = new ServiceConnection() {
+//
+//      @Override
+//      public void onServiceConnected(ComponentName className,
+//              IBinder service) {
+//          // We've bound to LocalService, cast the IBinder and get LocalService instance
+//          LocalBinder binder = (LocalBinder) service;
+//          mService = binder.getService();
+//          mBound = true;
+//      }
+//
+//      @Override
+//      public void onServiceDisconnected(ComponentName arg0) {
+//          mBound = false;
+//      }
+//  };
 }
