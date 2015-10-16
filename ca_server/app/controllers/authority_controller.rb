@@ -1,4 +1,5 @@
 require 'hbc_psi'
+require 'hbc_bearer_psi_ca'
 require 'ca'
 require 'open-uri'
 require 'pry'
@@ -93,7 +94,11 @@ class AuthorityController < ApplicationController
       end
       #resp[:connections] = c.profile( id: friends.first["id"], fields: %w(positions) )
 
-      resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v.id.to_s})
+      if params[:protocol] == 'b_psi_ca'
+        resp[:psi_message] = HbcBPsiCa.issue_capabilities(friends.collect {|v| v[:id]})
+      else
+        resp[:psi_message] = HbcPsi.sig_message(friends.collect {|v| v[:id]}, params[:protocol])
+      end
 
       envelope = {}
       envelope[:profile] = get_profile(c)

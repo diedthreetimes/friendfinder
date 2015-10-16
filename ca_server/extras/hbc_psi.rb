@@ -24,24 +24,62 @@ class HbcPsi
     F3256305 6CB67A86 1158DDD9 0E6A894C 72A5BBEF 9E286C6B
   EOS
 
+  @@rc= <<-'EOS'.split.join.hex
+    B30426F 062E6421A 0D2F74D0 FA79D8AD 66C1325A
+  EOS
+
   @@t = (p-1)/q
 
-  def self.sig_message set
+  def self.sig_message(set, protocol)
     #TODO: Ensure set is unique and flat
 
     ru = bigrand(512) % @@q
 
-    string_set = set.collect do |x|
-      encode( self.modpow(hash_str(x), ru, @@p) )
+    if protocol.nil? || protocol=="psi"
+      plaintext_set = set.collect do |x|
+        self.modpow(hash_str(x, "\0"), ru, @@p) 
+      end
+    elsif protocol=="psi_ca_dep" # old psi ca version
+
+      plaintext_set = set.collect do |x|
+        self.modpow(hash_str(x, "\0"), ru, @@p) 
+      end
+
+      rus = bigrand(512) % @@q
+      shuffle_set = set.shuffle(random: SecureRandom.hex(23).to_i(16))
+      plaintext_shuffle_set = shuffle_set.collect do |x|
+        hash_str( self.modpow(hash_str(x, "\0"), rus, @@p).to_s(16), "\1")
+      end
+
+      plaintext_set += plaintext_shuffle_set; # append plain text
+
+    elsif protocol=="psi_ca"
+      shuffle_set = set.shuffle(random: SecureRandom.hex(23).to_i(16))
+      plaintext_set = shuffle_set.collect do |x|
+        self.modpow(self.modpow(hash_str(x, "\0"), ru, @@p), @@rc, @@p)
+      end
+    else
+      raise RuntimeError, 'Undefined protocol'
+        
+    end
+
+    string_set = plaintext_set.collect do |x|
+      encode(x)
     end.join(' ')
+      
+    plaintext = plaintext_set.collect do |x|
+      x.to_s(16)
+    end.join(' ');
 
     sig = CA.sign(string_set)
     # Do we want to include the data in the signature? It seems that it's encoding is smaller
     # DEBUG PURPOSES ONLY
-    plaintext = set.collect do |x|
-      self.modpow(hash_str(x), ru, @@p).to_s(16)
-    end.join(' ')
-    {signed_message: sig.to_pem, secret: encode( ru ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+
+    if protocol=="psi_ca_dep"
+      {signed_message: sig.to_pem, secret: encode( ru ) + ' ' + encode( rus ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+    else
+      {signed_message: sig.to_pem, secret: encode( ru ), plaintext: plaintext,  p: @@p.to_s(16), q: @@q.to_s(16), g: @@g.to_s(16), t: @@t.to_s(16) }
+    end
     # {signed_message: sig.to_pem, secret: encode( ru )}
 
   end
@@ -69,7 +107,7 @@ class HbcPsi
 
   # Selector should be a binary string
   def self.hash_str(s, selector = "\0")
-    modpow(Digest::SHA1.hexdigest(selector+s).hex, @@t, @@p)
+    modpow(Digest::SHA1.hexdigest(selector+s.to_s()).hex, @@t, @@p)
   end
 
   def self.bigrand(bytes)
