@@ -1,4 +1,4 @@
-package com.sprout.friendfinder.ui;
+package com.sprout.friendfinder.ui.baseui;
 
 import android.view.LayoutInflater;
 import android.view.View;

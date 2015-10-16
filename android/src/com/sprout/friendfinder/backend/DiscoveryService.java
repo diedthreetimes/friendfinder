@@ -5,9 +5,14 @@ import java.lang.ref.WeakReference;
 import java.security.Security;
 import java.security.cert.CertificateException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -33,17 +38,22 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.activeandroid.query.Select;
 import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
-import com.sprout.friendfinder.crypto.ATWPSI;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
+import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
+import com.sprout.friendfinder.crypto.protocols.NegotiationProtocol;
+import com.sprout.friendfinder.crypto.protocols.ProtocolManager;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
+import com.sprout.friendfinder.ui.baseui.InteractionBaseActivity;
+import com.sprout.friendfinder.ui.InteractionItem;
 import com.sprout.friendfinder.ui.LoginActivity;
 
 // TODO: General
@@ -176,6 +186,9 @@ public class DiscoveryService extends Service {
     } else if (intent.getAction().equals(ACTION_RESET_CACHE)) {
       mMessageService.clearAllCache();
       mDeviceCache.clear();
+
+      PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().remove(LAST_SCAN_DEVICES_PREF).apply();
+      PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().remove(InteractionItem.EXCHANGE_IDENTITY_ADDR).apply();
     } else if (intent.getAction().equals(ACTION_RESET_CACHE_PEERS)) {
       mDeviceCache.clear();
     }
@@ -260,7 +273,7 @@ public class DiscoveryService extends Service {
   
   ProfileObject mProfile;
   List<ProfileObject> mContactList;
-  AuthorizationObject mAuthObj; 
+  Map<AuthorizationObjectType, AuthorizationObject> mAuthObj;
 
   // TODO: Rename donwloadAll
   private void downloadAll(final ProfileDownloadCallback callback) {
@@ -284,7 +297,9 @@ public class DiscoveryService extends Service {
           }
           
           AccessGrant grant = adapter.getAccessGrant(Provider.TWITTER);
-          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret()).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA_DEP).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
           
           if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
@@ -347,37 +362,61 @@ public class DiscoveryService extends Service {
   }
 
   // TODO: Rename
-  public AuthorizationObject loadAuthorizationFromFile() {
+  public Map<AuthorizationObjectType, AuthorizationObject> loadAuthorizationFromFile() {
+    
+    // only need PSI and PSI_CA
+    // TODO: put this into proper place
+    final List<AuthorizationObjectType> AUTH_TYPES = new ArrayList<AuthorizationObjectType>() {{
+      add(AuthorizationObjectType.PSI);
+      add(AuthorizationObjectType.PSI_CA);
+    }};
+    
     try {
-      return AuthorizationObject.getAvailableAuth(this);
+      Map<AuthorizationObjectType, AuthorizationObject> auths = new HashMap<AuthorizationObjectType, AuthorizationObject>();
+      for(AuthorizationObjectType type : AUTH_TYPES) {
+        auths.put(type, AuthorizationObject.getAvailableAuth(this, type));
+      }
+      return auths;
     } catch (Exception e) {
       Log.e(TAG, "Certificate could not be laoded. ", e);
       return null;
     }
   }
   
-  // Operations on the profile
-  private void checkCommonFriends(
-      List<ProfileObject> contactList, 
-      AuthorizationObject authobj,
-      Interaction interaction,
-      ProfileDownloadCallback callback) {
-    //assume established communication channel with peer 
-
-    if (authobj == null || contactList == null) {
-      Log.i(TAG, "Authorization or contactList not loaded, aborting test");  
-      return;
-    }
-
-    String[] input = new String[contactList.size()];
-    for( int i=0; i < contactList.size(); i++) {
-      input[i] = contactList.get(i).getUid();
-    }
-
-    // This is really weird. Perhaps we should just inline the CommonFriendsTest, it might make more sense.
-    // I also really don't like the use of callback here, but it works for now
-    (new CommonFriendsTest(mMessageService, authobj, callback, interaction)).execute(input);
-  }
+//  // Operations on the profile
+//  private void checkCommonFriends(
+//      List<ProfileObject> contactList, 
+//      Map<AuthorizationObjectType, AuthorizationObject> authobj,
+//      Interaction interaction,
+//      ProfileDownloadCallback callback) {
+//    //assume established communication channel with peer 
+//
+//    if (authobj == null || contactList == null) {
+//      Log.i(TAG, "Authorization or contactList not loaded, aborting test");  
+//      return;
+//    }
+//    
+//    if(!authobj.containsKey(AuthorizationObjectType.PSI) && !authobj.containsKey(AuthorizationObjectType.PSI_CA)) {
+//      Log.e(TAG, "auths dont exist, aborting test");
+//      return;
+//    }
+//
+//    String[] input = new String[contactList.size()];
+//    for( int i=0; i < contactList.size(); i++) {
+//      input[i] = contactList.get(i).getUid();
+//    }
+//    
+//    Log.i(TAG, "Start common friends cardinality");
+//    
+//    // TODO: pretty ugly here passing all params for commonFriendsTest
+//    (new CommonFriendsCardinalityTest(mMessageService, 
+//        authobj.get(AuthorizationObjectType.PSI_CA), authobj.get(AuthorizationObjectType.PSI), 
+//        callback, interaction, input)).execute(input);
+//
+//    // This is really weird. Perhaps we should just inline the CommonFriendsTest, it might make more sense.
+//    // I also really don't like the use of callback here, but it works for now
+////    (new CommonFriendsTest(mMessageService, authobj, callback, interaction)).execute(input);
+//  }
   
   /*****************************/
   /* ** Utility Functions  *** */
@@ -403,7 +442,7 @@ public class DiscoveryService extends Service {
           stop();
         }
         else { 
-          if (D) Log.i(TAG, "Discovery completed");
+          if (D) Log.i(TAG, "Discovery completed. Devices found: "+((result==null) ? null : result.getAddresses()));
           
           if (mState != STATE_CONNECTED && mState != STATE_RUNNING) {
             runAll(result);
@@ -616,6 +655,7 @@ public class DiscoveryService extends Service {
       mContactList = loadContactsFromFile(); 
     if (mAuthObj == null)
       mAuthObj = loadAuthorizationFromFile();
+    	
 
     if (mProfile == null || mContactList == null || mAuthObj == null) {
       Log.e(TAG, "Profile, Authorization, or Contact list not available in run");
@@ -660,6 +700,7 @@ public class DiscoveryService extends Service {
   
   // Called when discovery completes to run all discovered devices
   private void runAll(ScanResult discovered) {
+    Log.i(TAG, "LAST_SCAN_DEVICES_PREF: "+PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).getStringSet(LAST_SCAN_DEVICES_PREF, null));
     mLastScanResult = discovered;
     
     // sometimes it can be null
@@ -669,14 +710,17 @@ public class DiscoveryService extends Service {
   }
   
   private void notifyChanges() {
-	if(mLastScanResult == null) {
-		Log.i(TAG, "mLastScanDevice is null - most likely you are being discovered or no device found in last scan");
-		return;
-	}
+    if(mLastScanDevices == null) {
+      Log.i(TAG, "mLastScanDevices is null - most likely you are being discovered or no device found in last scan");
+      return;
+    }
     SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
     Editor prefsEditor = mPrefs.edit();
     prefsEditor.putStringSet(LAST_SCAN_DEVICES_PREF, mLastScanDevices.getAddresses()).apply();
     Log.i(TAG, "previous discovery, number of devices found: " + mLastScanDevices.size());
+    
+    // reset mLastScanDevices
+    mLastScanDevices = null;
   }
   
   private void run() {
@@ -717,12 +761,10 @@ public class DiscoveryService extends Service {
     mRunningDevice = i.next();
     i.remove();
     
-    
-    if( mDeviceCache.contains(mRunningDevice) ) {
-      if(D) Log.d(TAG, "Device in cache, avoiding. " + mRunningDevice);
-      run();// A bit strange way to loop through devcices, but it works
-      return;
+    if(ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice).equals(ProtocolManager.NONE)) {
+      run();
     } else {
+      Log.i(TAG, "Trying to connect device: "+mRunningDevice);
       mMessageService.connect(mRunningDevice);
     }
     
@@ -730,6 +772,7 @@ public class DiscoveryService extends Service {
   }
   
   private void connected() {    
+    
     // TODO: What is the best thing to do in this case? For now just warn and return.
     if (mState == STATE_CONNECTED) {
       Log.w(TAG, "Connected() called while already connected");
@@ -748,56 +791,155 @@ public class DiscoveryService extends Service {
     
     if (mMessageService == null || mMessageService.getState() != CommunicationService.STATE_CONNECTED) {
       Log.e(TAG, "Running, but CommunicationService not initialized, or not connected");
+      if(mMessageService != null) {
+        Log.e(TAG, "mMessageService state is "+mMessageService.getState());
+      }
       stop();
       return;
     }
     
     setState(STATE_CONNECTED);
     
-    if(D) Log.i(TAG, "Connected, attempting to check for common friends");
-    final Interaction interaction = new Interaction();
-    interaction.address = mRunningDevice.getAddress();
-    interaction.timestamp = Calendar.getInstance();
-    // TODO: We also want to set the interaction's public key but this isn't very important atm.
-    //   eventually this needs to happen in the crypto protocol
+    // figure out what protocol "I" want to run with this device
+    final String protocolType = ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice);
+    Log.i(TAG, "before negotiation phase, I want to run "+protocolType+" with device: "+mRunningDevice);
     
-    checkCommonFriends(mContactList, mAuthObj, interaction, new ProfileDownloadCallback() {
+    // start negotiation phase
+    new NegotiationProtocol(mMessageService, protocolType, new ProfileDownloadCallback() {
 
-      // After this protocol completes, we enter the ready state
       @Override
       public void onComplete() {
-        if(V) Log.i(TAG, "Common friend detection complete.");
-      
-        if (!benchmarkBandwidth) {// overloaded for now
-          mDeviceCache.add(mRunningDevice);
-        } 
-        
-        interaction.failed = false;
-        interaction.save();
-        
-        // show notification on success after getting address
-        ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, interaction);
-        Log.i(TAG, "saving interaction at addr: "+interaction.address);
-
-        run();
+        // now we know what protocol we should run..
+        // TODO: for now, assume we will run protocol if my protocol matches his
+        try {
+          Log.i(TAG, "negotiation is completed, now running protocol "+protocolType+" with device: "+mRunningDevice);
+          runProtocol(protocolType);
+        } catch (Exception e) {
+          Log.i(TAG, "fail to run protocol");
+          e.printStackTrace();
+          run();
+        }
       }
 
       @Override
       public void onError() {
-        if(D) Log.i(TAG, "Error occured connecting to [device]");
-        
-        interaction.failed = true;
-        interaction.save();
-        
-        // TODO: we should increment device's failed counter
-        // If it is less than maximum retry attempts we should try again (possibly on next discovery)
-        // We also need to clear any state that we have saved due to contact with device
-        // For now, we simply do nothing.
         run();
       }
-    });
-  }
+      
+    }).execute();
     
+  }
+  
+  private ProfileDownloadCallback getProfileDownloadCallback(String protocolType, final Interaction interaction) {
+    if(protocolType.equals(ProtocolManager.IDX)) {
+        return new ProfileDownloadCallback() {
+        
+          @Override
+          public void onError() {
+            if(D) Log.i(TAG, "Error trying to exchange identity with device "+mRunningDevice);
+            
+            // TODO: do something with interaction and save it
+            interaction.failed = true;
+            interaction.save();
+            run();
+          }
+          
+          @Override
+          public void onComplete() {
+            if(V) Log.i(TAG, "Identity exchange complete. Remove "+mRunningDevice+" from EXCHANGE_IDENTITY_ADDR");
+            //remove addr in sharedpref
+            SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+            
+            Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
+            pendingExchangeAddr.remove(mRunningDevice.getAddress());
+
+            // TODO: have to revisit this for active interaction
+            // we need to add this when we are the one being discovered - scanResult is null
+            // maybe use another pref for adding into active list (or otto)
+            if(V) Log.i(TAG, "adding "+mRunningDevice.getAddress()+" into active interaction list");
+            Set<String> lastScanAddrSet = new HashSet<String>(pref.getStringSet(LAST_SCAN_DEVICES_PREF, new HashSet<String>()));
+            lastScanAddrSet.add(mRunningDevice.getAddress());
+
+            pref.edit()
+            .putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr)
+            .putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet)
+            .putBoolean(InteractionBaseActivity.RELOAD_ADAPTER_PREF, true)
+            .apply();
+            
+            // TODO: do something with interaction and save it
+            interaction.failed = false;
+            interaction.save();
+            
+            Log.i(TAG, "Saving interaction with profile "+interaction.profile.toString());
+            
+            run();
+          }
+          
+        };
+    } else if(protocolType.equals(ProtocolManager.PSI) || protocolType.equals(ProtocolManager.PSICA)) {
+      return new ProfileDownloadCallback() {
+
+        // After this protocol completes, we enter the ready state
+        @Override
+        public void onComplete() {
+          if(V) Log.i(TAG, "Common friend detection complete.");
+        
+          if (!benchmarkBandwidth) {// overloaded for now
+            mDeviceCache.add(mRunningDevice);
+          } 
+          
+          interaction.failed = false;
+          interaction.save();
+          
+          // show notification on success after getting address
+          ContactsNotificationManager.getInstance().showNotification(DiscoveryService.this, interaction);
+          Log.i(TAG, "saving interaction at addr: "+interaction.address);
+          
+          // TODO: have to revisit this for active interaction
+          // we need to add this when we are the one being discovered - scanResult is null
+          // maybe use another pref for adding into active list (or otto)
+          Log.i(TAG, "adding "+mRunningDevice.getAddress()+" into active interaction list");
+          SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+          Set<String> lastScanAddrSet = new HashSet<String>(mPrefs.getStringSet(LAST_SCAN_DEVICES_PREF, new HashSet<String>()));
+          lastScanAddrSet.add(mRunningDevice.getAddress());
+          PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet).apply();
+          
+          run();
+        }
+
+        @Override
+        public void onError() {
+          if(D) Log.i(TAG, "Error occured connecting to [device]");
+          
+          interaction.failed = true;
+          interaction.save();
+          
+          // TODO: we should increment device's failed counter
+          // If it is less than maximum retry attempts we should try again (possibly on next discovery)
+          // We also need to clear any state that we have saved due to contact with device
+          // For now, we simply do nothing.
+          run();
+        }
+      };
+    } else return null;
+  }
+  
+  private void runProtocol(String protocolType) throws Exception  {
+    final Interaction interaction;
+    if(protocolType.equals(ProtocolManager.IDX)) {
+      //TODO: using address is wrong, maybe need to use id instead
+      interaction = (Interaction) new Select().from(Interaction.class).where("address=?", mRunningDevice.getAddress()).orderBy("timestamp DESC").executeSingle();
+    } else {
+      interaction = new Interaction();
+      interaction.address = mRunningDevice.getAddress();
+      interaction.timestamp = Calendar.getInstance();
+    }
+    
+    ProfileDownloadCallback callback = getProfileDownloadCallback(protocolType, interaction);
+    
+    Log.i(TAG, "about to run protocol "+protocolType);
+    ProtocolManager.runProtocol(protocolType, mAuthObj, callback, this, mMessageService, mRunningDevice, mContactList, interaction);
+  }
 
   private void onDisabled() {
     setState(STATE_DISABLED);
@@ -886,65 +1028,6 @@ public class DiscoveryService extends Service {
     /* ** Getters / Setters  *** */
     /*****************************/
 
-
-
-    /*****************************/
-    /* ** Protocol Callbacks *** */
-    /*****************************/
-    
-    // This extends AsyncTask, and thus we provide the UI specific methods here
-    private class CommonFriendsTest extends ATWPSI {
-      
-      ProfileDownloadCallback callback;
-      Interaction interaction;
-
-      public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject, ProfileDownloadCallback callback, Interaction interaction) {
-        super(s, authObject);
-        
-        this.callback = callback;
-        this.interaction = interaction;
-
-        setBenchmark(Config.getBenchmark());
-      }
-      
-      @Override
-      public List<String> doInBackground(String... params) {
-        try {
-          return super.doInBackground(params);
-        } catch (Exception e) {
-          Log.e(TAG, "CommonFriendsProtocol failed, ", e);
-          return null;
-        }
-      }
-
-      @Override
-      public void onPreExecute() {
-        Log.i(TAG, "About to execute the common friends protocol");
-      }
-
-      @Override
-      public void onPostExecute(List<String> result) {
-        Log.i(TAG, "Common friends protocol complete");
-        
-        if (result == null) {
-          callback.onError();
-          return;
-        }
-        
-        ContactsListObject contacts = new ContactsListObject();
-        contacts.save();
-
-        for (String id : result){          
-          contacts.put(id);
-        }
-        
-        interaction.sharedContacts = contacts;
-        
-        Log.i(TAG, "Showing notification");
-    	
-        callback.onComplete();
-      }
-    }
     
     /*****************************/
     /* ***  Custom Callbacks *** */
@@ -953,7 +1036,7 @@ public class DiscoveryService extends Service {
     /**
      * This callback monitors asynchronous social interactions. i.e. downloading
      */
-    interface ProfileDownloadCallback {
+    public interface ProfileDownloadCallback {
       public void onComplete();
       public void onError();
     }

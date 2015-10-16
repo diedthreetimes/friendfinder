@@ -2,6 +2,8 @@ package com.sprout.friendfinder.ui;
 
 import java.util.List;
 
+import com.sprout.friendfinder.ui.baseui.Item;
+
 import android.content.Context;
 import android.util.Log;
 import android.view.LayoutInflater;

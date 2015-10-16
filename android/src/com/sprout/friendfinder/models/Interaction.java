@@ -81,4 +81,18 @@ public class Interaction extends Model {
 		  return interactions;
 	  } else return allActiveInteractions;
 	}
+  
+  @Override
+  public boolean equals(Object obj) {
+      if (this == obj)
+          return true;
+      if (obj == null)
+          return false;
+      if (getClass() != obj.getClass())
+          return false;
+      Interaction int2 = (Interaction) obj;
+      
+      // should be enough
+      return (this.address.equals(int2.address) && this.timestamp.equals(int2.timestamp));
+  }
 }

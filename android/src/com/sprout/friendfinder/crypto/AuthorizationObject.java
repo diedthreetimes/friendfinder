@@ -67,6 +67,9 @@ public class AuthorizationObject extends Model implements Serializable {
 
   @Column
   private BigInteger R;
+  
+  @Column
+  private BigInteger R2; // for psi-ca protocol
 
   @Column
   private String auth;
@@ -80,9 +83,17 @@ public class AuthorizationObject extends Model implements Serializable {
   @Column
   private transient ArrayList<String> orderedInput;
   
-  public static AuthorizationObject getAvailableAuth(Context context) throws CertificateException, IOException {
+  public enum AuthorizationObjectType {
+	  PSI, PSI_CA, PSI_CA_DEP;
+  }
+  
+  @Column
+  protected AuthorizationObjectType type = AuthorizationObjectType.PSI; // default type is psi
+  
+  public static AuthorizationObject getAvailableAuth(Context context, AuthorizationObjectType type) throws CertificateException, IOException {
     // Return any auth for now, since we don't batch authorizations
-    AuthorizationObject auth = new Select().from(AuthorizationObject.class).executeSingle();
+    AuthorizationObject auth = new Select().from(AuthorizationObject.class).where("type=?",type).executeSingle();
+    Log.i(TAG, "Load cert for type: "+type);
     auth.loadCert(context);
     return auth;
   }
@@ -100,6 +111,16 @@ public class AuthorizationObject extends Model implements Serializable {
     super();
     loadCert(ctx);
   }
+
+  public AuthorizationObject(Context ctx, BigInteger R, BigInteger R2, String auth) throws IOException, CertificateException {
+    super();
+
+    this.auth = auth;
+    this.R = R;
+    this.R2 = R2;
+    loadCert(ctx);
+  }
+
 
   public AuthorizationObject(Context ctx, BigInteger R, String auth) throws IOException, CertificateException {
     super();
@@ -121,16 +142,35 @@ public class AuthorizationObject extends Model implements Serializable {
     this.cert = other.cert;
     this.auth = auth;
   }
+  
+  public AuthorizationObject(AuthorizationObject other, String auth, String authIdentity) {
+    super(); 
 
-  public AuthorizationObject(Context ctx, String response) throws JSONException, IOException, CertificateException {
+    this.R = null;
+    this.cert = other.cert;
+    this.auth = auth;
+    this.authIdentity = authIdentity;
+  }
+
+  public AuthorizationObject(Context ctx, String response, AuthorizationObjectType type) throws JSONException, IOException, CertificateException {
     super();
+    this.type = type;
     loadCert(ctx);
     JSONObject jObject = new JSONObject(response);
 
     JSONObject msg = jObject.getJSONObject("psi_message");
+    
+    String Rstring = (String) msg.get("secret");
+    Log.d(TAG, "Rstring: "+Rstring);
+    String[] RstringList = Rstring.split(" ");
+
+    R = decode( RstringList[0] );
+    if(type.equals(AuthorizationObjectType.PSI_CA_DEP)) {
+      R2 = decode( RstringList[1] );
+      Log.d(TAG, "R1: "+RstringList[0]+"   R2: "+RstringList[1]);
+    }
 
     auth = msg.getString("signed_message");
-    R = decode( msg.getString("secret") );
 
     if (jObject.has("connections")) {
       JSONArray connections = jObject.getJSONArray("connections");
@@ -150,6 +190,7 @@ public class AuthorizationObject extends Model implements Serializable {
     } else {
       if(D) Log.d(TAG, "Signed identity not present.");
     }
+    if(D) Log.d(TAG, "Successfully dl auth obj");
   }
 
   private void loadCert(Context context) throws IOException, CertificateException {
@@ -169,13 +210,9 @@ public class AuthorizationObject extends Model implements Serializable {
       return false;
     }
   }
-
-  /**
-   * 
-   * @return validity of this auth
-   */
-  public boolean verify() {
-    if (auth == null) {
+  
+  private boolean verify(String authString) {
+    if (authString == null) {
       throw new NullPointerException ("Verify called on an uninitialized auth object.");
     }
     // We may want a way to verify arbitrary data. In case the signature is detached. 
@@ -184,7 +221,7 @@ public class AuthorizationObject extends Model implements Serializable {
     // TODO: Validate the time
     try {
       @SuppressWarnings("resource")
-      ContentInfo ci = (ContentInfo) new PEMParser(new StringReader(auth)).readObject();
+      ContentInfo ci = (ContentInfo) new PEMParser(new StringReader(authString)).readObject();
       CMSSignedData cms = new CMSSignedData(ci);
 
       // Retrieve the first signer
@@ -200,6 +237,18 @@ public class AuthorizationObject extends Model implements Serializable {
       Log.e(TAG, "Authorization processing error", e);
       return false;
     }
+  }
+  
+  public boolean verifyIdentity() {
+    return verify(authIdentity);
+  }
+
+  /**
+   * 
+   * @return validity of this auth
+   */
+  public boolean verify() {
+    return verify(auth);
   }
 
   /* These are unused, but left in order to make use of the serialization api at a later date
@@ -228,17 +277,22 @@ public class AuthorizationObject extends Model implements Serializable {
   public String getAuth() {
     return this.auth;
   }
+  
+  public AuthorizationObjectType getType() {
+    return this.type;
+  }
 
   public List<String> getOriginalOrder() {
     return orderedInput;
   }
+  
+  private String decodeData(String encodedData) {
 
-  public List<BigInteger> getData () {
     // decode the encoded data object if necessary
 
     try {
       @SuppressWarnings("resource")
-      ContentInfo ci = (ContentInfo) new PEMParser(new StringReader(auth)).readObject();
+      ContentInfo ci = (ContentInfo) new PEMParser(new StringReader(encodedData)).readObject();
       CMSSignedData cms = new CMSSignedData(ci);
 
 
@@ -253,13 +307,7 @@ public class AuthorizationObject extends Model implements Serializable {
 
       String base64 = new String(bytes);
 
-      List<BigInteger> ret = new ArrayList<BigInteger>();
-
-      for( String bn : base64.split(" ") ) {
-        ret.add( decode(bn) );
-      }
-
-      return ret;
+      return base64;
     } catch (CMSException e) {
       Log.e(TAG, "Authorization processing error" , e);
       return null;
@@ -267,6 +315,23 @@ public class AuthorizationObject extends Model implements Serializable {
       Log.e(TAG, "Error processing content" , e);
       return null;
     }
+  }
+  
+  public String getDecodedIdentity() {
+    return decodeData(authIdentity);
+  }
+
+  public List<BigInteger> getData () {
+    String base64 = decodeData(auth);
+    if(base64==null) return null;
+
+    List<BigInteger> ret = new ArrayList<BigInteger>();
+
+    for( String bn : base64.split(" ") ) {
+      ret.add( decode(bn) );
+    }
+
+    return ret;
   }
 
   public String getIdentity() {
@@ -286,5 +351,9 @@ public class AuthorizationObject extends Model implements Serializable {
     bbuf.put(hex);
 
     return new BigInteger(array);
+  }
+
+  public BigInteger getR2() {
+    return R2;
   }
 }
