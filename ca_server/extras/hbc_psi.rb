@@ -107,7 +107,7 @@ class HbcPsi
 
   # Selector should be a binary string
   def self.hash_str(s, selector = "\0")
-    modpow(Digest::SHA1.hexdigest(selector+s).hex, @@t, @@p)
+    modpow(Digest::SHA1.hexdigest(selector+s.to_s()).hex, @@t, @@p)
   end
 
   def self.bigrand(bytes)
