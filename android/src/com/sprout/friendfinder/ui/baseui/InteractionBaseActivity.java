@@ -66,22 +66,22 @@ public abstract class InteractionBaseActivity extends BaseListActivity {
 	public void onCreate(Bundle savedInstanceState) {   
     super.onCreate(savedInstanceState);
     
-//    // set listener for changing adapter values
-//		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-//    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-//			
-//			@Override
-//			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
-//					String key) {
-//				Log.i(TAG, "pref change for key: "+key);
-//				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
-//					reloadAdapter();
-//					adapter.notifyDataSetChanged();
-//				}
-//				
-//			}
-//		};
-//		mPrefs.registerOnSharedPreferenceChangeListener(listener);
+    // set listener for changing adapter values
+		SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+    listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+			
+			@Override
+			public void onSharedPreferenceChanged(SharedPreferences sharedPreferences,
+					String key) {
+				Log.i(TAG, "pref change for key: "+key);
+				if(key.equals(DiscoveryService.LAST_SCAN_DEVICES_PREF)) {
+					reloadAdapter();
+					adapter.notifyDataSetChanged();
+				}
+				
+			}
+		};
+		mPrefs.registerOnSharedPreferenceChangeListener(listener);
 		
     // Bind to our new adapter.
     reloadAdapter();
