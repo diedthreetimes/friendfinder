@@ -833,12 +833,12 @@ public class DiscoveryService extends Service {
     
   }
   
-  private ProfileDownloadCallback getProfileDownloadCallback(ProtocolType protocolType, final Interaction interaction) {
+  private ProtocolCallback getProtocolCallback(ProtocolType protocolType, final Interaction interaction) {
     if(protocolType.equals(ProtocolType.IDX)) {
-        return new ProfileDownloadCallback() {
+        return new ProtocolCallback() {
         
           @Override
-          public void onError() {
+          public void onError(Object o) {
             if(D) Log.i(TAG, "Error trying to exchange identity with device "+mRunningDevice);
             
             // TODO: do something with interaction and save it
@@ -848,7 +848,7 @@ public class DiscoveryService extends Service {
           }
           
           @Override
-          public void onComplete() {
+          public void onComplete(Object o) {
             if(V) Log.i(TAG, "Identity exchange complete. Remove "+mRunningDevice+" from EXCHANGE_IDENTITY_ADDR");
             //remove addr in sharedpref
             SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
@@ -881,9 +881,9 @@ public class DiscoveryService extends Service {
         };
     } else if (protocolType.equals(ProtocolType.PSICA) || protocolType.equals(ProtocolType.BPSICA)) {
       
-      return new ProfileDownloadCallback() {
+      return new ProtocolCallback() {
         @Override
-        public void onComplete() {
+        public void onComplete(Object o) {
           try {
             Log.i(TAG, "Successfully compute cardinality, now go to PSI");
             runProtocol(ProtocolType.PSI);
@@ -894,7 +894,7 @@ public class DiscoveryService extends Service {
         }
 
         @Override
-        public void onError() {
+        public void onError(Object o) {
           if(D) Log.i(TAG, "Error occured connecting to [device]");
           
           interaction.failed = true;
@@ -910,11 +910,11 @@ public class DiscoveryService extends Service {
       };
     
     } else if(protocolType.equals(ProtocolType.PSI)) {
-      return new ProfileDownloadCallback() {
+      return new ProtocolCallback() {
 
         // After this protocol completes, we enter the ready state
         @Override
-        public void onComplete() {
+        public void onComplete(Object o) {
           if(V) Log.i(TAG, "Common friend detection complete.");
         
           if (!benchmarkBandwidth) {// overloaded for now
@@ -941,7 +941,7 @@ public class DiscoveryService extends Service {
         }
 
         @Override
-        public void onError() {
+        public void onError(Object o) {
           if(D) Log.i(TAG, "Error occured connecting to [device]");
           
           interaction.failed = true;
@@ -968,7 +968,7 @@ public class DiscoveryService extends Service {
       interaction.timestamp = Calendar.getInstance();
     }
     
-    ProfileDownloadCallback callback = getProfileDownloadCallback(protocolType, interaction);
+    ProtocolCallback callback = getProtocolCallback(protocolType, interaction);
     
     Log.i(TAG, "about to run protocol "+protocolType);
     ProtocolManager.runProtocol(protocolType, mAuthObj, callback, this, mMessageService, mRunningDevice, mContactList, interaction);

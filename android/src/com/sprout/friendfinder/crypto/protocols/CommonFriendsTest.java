@@ -5,7 +5,7 @@ import java.util.List;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
+import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWPSIProtocol;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
@@ -14,11 +14,11 @@ import com.sprout.friendfinder.models.Interaction;
 
 public class CommonFriendsTest extends ATWPSIProtocol {
   
-  ProfileDownloadCallback callback;
+  ProtocolCallback callback;
   Interaction interaction;
   static final String TAG = CommonFriendsTest.class.getSimpleName();
 
-  public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject, ProfileDownloadCallback callback, Interaction interaction) {
+  public CommonFriendsTest(CommunicationService s, AuthorizationObject authObject, ProtocolCallback callback, Interaction interaction) {
     super(s, authObject);
     
     this.callback = callback;
@@ -47,7 +47,7 @@ public class CommonFriendsTest extends ATWPSIProtocol {
     Log.i(TAG, "Common friends protocol complete");
     
     if (result == null) {
-      callback.onError();
+      callback.onError(null);
       return;
     }
     
@@ -60,6 +60,6 @@ public class CommonFriendsTest extends ATWPSIProtocol {
     
     interaction.sharedContacts = contacts;
   
-    callback.onComplete();
+    callback.onComplete(null);
   }
 }

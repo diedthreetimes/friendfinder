@@ -5,7 +5,7 @@ import java.util.List;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
+import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.crypto.ATWBearerPSICA;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
@@ -13,10 +13,10 @@ import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectTyp
 public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
 
   static final String TAG = CommonFriendsBearerCardinalityTest.class.getSimpleName();
-  ProfileDownloadCallback callback;
+  ProtocolCallback callback;
 
   public CommonFriendsBearerCardinalityTest(CommunicationService s,
-      AuthorizationObject bpsiCaAuth, ProfileDownloadCallback cb) {
+      AuthorizationObject bpsiCaAuth, ProtocolCallback cb) {
     super(s, bpsiCaAuth.getData());
     if(bpsiCaAuth.getType() != AuthorizationObjectType.B_PSI_CA) {
       String errorMsg = "auth mismatched";
@@ -45,11 +45,11 @@ public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
   @Override
   public void onPostExecute(List<String> result) {
     if(result == null) {
-      callback.onError();
+      callback.onError(null);
       return;
     } 
     Log.i(TAG, "Common friends: " + result.size());
-    callback.onComplete();
+    callback.onComplete(null);
   }
 
 }

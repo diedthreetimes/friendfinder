@@ -7,7 +7,7 @@ import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.crypto.PrivateProtocol;
-import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
+import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
@@ -20,18 +20,16 @@ import com.sprout.friendfinder.models.ProfileObject;
 public class IdentityExchangeProtocol extends PrivateProtocol<Void, Void, ProfileObject> {
   
   private static final String TAG = IdentityExchangeProtocol.class.getSimpleName();
-  private ProfileDownloadCallback callback;
+  private ProtocolCallback callback;
   private AuthorizationObject authObj;
   private Interaction interaction;
-  private CommunicationService com;
   
-  public IdentityExchangeProtocol(CommunicationService s, ProfileDownloadCallback callback, 
+  public IdentityExchangeProtocol(CommunicationService s, ProtocolCallback callback, 
       AuthorizationObject authObj, Interaction interaction) {
     this(IdentityExchangeProtocol.class.getSimpleName(), s, true);
     this.callback = callback;
     this.authObj = authObj;
     this.interaction = interaction;
-    this.com = s;
   }
 
   protected IdentityExchangeProtocol(String testName, CommunicationService s,
@@ -121,10 +119,10 @@ public class IdentityExchangeProtocol extends PrivateProtocol<Void, Void, Profil
       
       interaction.profile = result;
       
-      callback.onComplete();
+      callback.onComplete(null);
     } else {
       Log.i(TAG, "identity exchange fail");
-      callback.onError();
+      callback.onError(null);
     }
   }
   

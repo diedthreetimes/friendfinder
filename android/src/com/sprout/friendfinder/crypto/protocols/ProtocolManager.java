@@ -13,7 +13,7 @@ import android.util.Log;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.backend.DeviceCache;
-import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
+import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 import com.sprout.friendfinder.models.Interaction;
@@ -61,7 +61,7 @@ public class ProtocolManager {
     // TODO: hard-code PSICA or BPSICA
     if( !deviceCache.contains(connectedDevice) ) {
       Log.i(TAG, "return PSICA");
-      return ProtocolType.PSICA;
+      return ProtocolType.BPSICA;
     }
 
     Log.i(TAG, "return NONE");
@@ -69,7 +69,7 @@ public class ProtocolManager {
     
   }
   
-  private static void runIDXProtocol(CommunicationService cs, ProfileDownloadCallback callback,
+  private static void runIDXProtocol(CommunicationService cs, ProtocolCallback callback,
       final Map<AuthorizationObjectType, AuthorizationObject> authMaps,
       final Interaction interaction) {
     
@@ -83,7 +83,7 @@ public class ProtocolManager {
 
     if(recv == null || recv.length != 1 || recv[0] != (byte) 1) {
       Log.i(TAG, "Error when reading recv: "+recv.toString());
-      callback.onError();
+      callback.onError(null);
       return;
     }
     
@@ -91,7 +91,7 @@ public class ProtocolManager {
   }
 
   public static void runProtocol(ProtocolType protocol, final Map<AuthorizationObjectType, AuthorizationObject> authMaps,
-      final ProfileDownloadCallback callback, final Context c, 
+      final ProtocolCallback callback, final Context c, 
       final CommunicationService cs, final Device connectedDevice, List<ProfileObject> contactList,
       final Interaction interaction) throws Exception {
   

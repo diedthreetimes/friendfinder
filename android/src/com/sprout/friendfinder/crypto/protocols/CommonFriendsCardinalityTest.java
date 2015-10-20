@@ -5,7 +5,7 @@ import java.util.List;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
-import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
+import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWPSICAProtocol;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
@@ -14,12 +14,12 @@ import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectTyp
 public class CommonFriendsCardinalityTest extends ATWPSICAProtocol {
   
   AuthorizationObject commonFriendsAuth;
-  ProfileDownloadCallback callback;
+  ProtocolCallback callback;
   
   static final String TAG = CommonFriendsCardinalityTest.class.getSimpleName();
   
   public CommonFriendsCardinalityTest(CommunicationService s, AuthorizationObject psicaAuth, 
-      ProfileDownloadCallback callback) {
+      ProtocolCallback callback) {
     // check authObject type
     super(s, psicaAuth);
     if(psicaAuth.getType() != AuthorizationObjectType.PSI_CA) {
@@ -50,12 +50,12 @@ public class CommonFriendsCardinalityTest extends ATWPSICAProtocol {
   @Override
   public void onPostExecute(List<String> result) {
     if(result == null) {
-      callback.onError();
+      callback.onError(null);
       return;
     }
     Log.i(TAG, "Common friends cardinality protocol complete");
     Log.i(TAG, result.size()+" common friends");
-    callback.onComplete();
+    callback.onComplete(null);
     
     // check if peer wanna run PSI
     // TODO: now just hardcode the policy and policy is the same on both sides and assume PSI always done after PSI-CA
