@@ -1,6 +1,5 @@
 package com.sprout.friendfinder.ui.baseui;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,7 +7,6 @@ import java.util.Set;
 import com.activeandroid.query.Select;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.backend.DiscoveryService;
-import com.sprout.friendfinder.backend.DiscoveryService.LocalBinder;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.ui.InteractionItem;
 import com.sprout.friendfinder.ui.IntersectionResultsActivity;
@@ -16,17 +14,10 @@ import com.sprout.friendfinder.ui.ItemAdapter;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
 import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
-import android.app.ListActivity;
-import android.content.BroadcastReceiver;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
@@ -50,17 +41,6 @@ public abstract class InteractionBaseActivity extends BaseListActivity {
 
   DiscoveryService mService;
   boolean mBound = false;
-  
-  private class ReloadAdapterReceiver extends BroadcastReceiver {
-
-    @Override
-    public void onReceive(Context arg0, Intent arg1) {
-      Log.i(TAG, "In reload adapter receiver");
-      reloadAdapter();
-      adapter.notifyDataSetChanged();
-    }
-
-   }
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {   
