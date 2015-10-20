@@ -2,13 +2,13 @@ package com.sprout.friendfinder.crypto.protocols;
 
 import java.util.List;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
 import com.sprout.friendfinder.crypto.ATWBearerPSICA;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
+import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 
 public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
 
@@ -18,6 +18,11 @@ public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
   public CommonFriendsBearerCardinalityTest(CommunicationService s,
       AuthorizationObject bpsiCaAuth, ProfileDownloadCallback cb) {
     super(s, bpsiCaAuth.getData());
+    if(bpsiCaAuth.getType() != AuthorizationObjectType.B_PSI_CA) {
+      String errorMsg = "auth mismatched";
+      Log.e(TAG,  errorMsg);
+      throw new IllegalArgumentException(errorMsg);
+    }
     
     callback = cb;
   }

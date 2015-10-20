@@ -1,6 +1,5 @@
 package com.sprout.friendfinder.crypto.protocols;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,21 +23,21 @@ import com.sprout.friendfinder.ui.InteractionItem;
 public class ProtocolManager {
   
   // going to add protocol type/policy type in policy when implemented
-  public static String PSICA = "PSICA";
-  public static String PSI = "PSI";
-  public static String IDX = "IDENTITY_EXCHANGE";
-  public static String NONE = "NONE";
+  public enum ProtocolType {
+    NONE(0), IDX(4), PSI(2), PSICA(3), BPSICA(4);
+    
+    int priority;
+    private ProtocolType(int val) {
+      priority = val;
+    }
+    
+    public static ProtocolType max(ProtocolType p1, ProtocolType p2) {
+      return p1.priority > p2.priority ? p1 : p2;
+    }
+  }
   
   static final String TAG = ProtocolManager.class.getSimpleName();
-  
-  public static List<String> getAllSupportedProtocols() {
-    List<String> allProts = new ArrayList<String>() {{
-      add(PSICA);
-      add(PSI);
-      add(IDX);
-    }};
-    return allProts;
-  }
+
   
   /**
    * get type of protocol based on status of connected device and user's policy
@@ -46,7 +45,7 @@ public class ProtocolManager {
    * @param connectedDevice
    * @return
    */
-  public static String getProtocolType(Context context, DeviceCache deviceCache, Device connectedDevice) {
+  public static ProtocolType getProtocolType(Context context, DeviceCache deviceCache, Device connectedDevice) {
     Log.i(TAG, "getting type of protocol");
     
     // first check if the identity exchange button was clicked or policy allowed it
@@ -55,51 +54,144 @@ public class ProtocolManager {
     Set<String> pendingExchangeAddr = pref.getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
     if(pendingExchangeAddr.contains(connectedDevice.getAddress())) {
       Log.i(TAG, "return IDX");
-      return IDX;
+      return ProtocolType.IDX;
     }
 
     // device not in cache, we should connect
-    // TODO: depend on PSI
+    // TODO: hard-code PSICA or BPSICA
     if( !deviceCache.contains(connectedDevice) ) {
       Log.i(TAG, "return PSICA");
-      return PSICA;
+      return ProtocolType.PSICA;
     }
 
     Log.i(TAG, "return NONE");
-    return NONE;
+    return ProtocolType.NONE;
     
   }
+  
+  private static void runIDXProtocol(CommunicationService cs, ProfileDownloadCallback callback,
+      final Map<AuthorizationObjectType, AuthorizationObject> authMaps,
+      final Interaction interaction) {
+    
+    // check if the other side still wants to run IDX
+    // any better way to confirm that both side wanna do IDX?
+    byte[] send = new byte[1];
+    send[0] = (byte) 1;
+    cs.write(send);
+    
+    byte[] recv = cs.read();
 
-  public static void runProtocol(String protocol, Map<AuthorizationObjectType, AuthorizationObject> authMaps,
+    if(recv == null || recv.length != 1 || recv[0] != (byte) 1) {
+      Log.i(TAG, "Error when reading recv: "+recv.toString());
+      callback.onError();
+      return;
+    }
+    
+    new IdentityExchangeProtocol(cs, callback, authMaps.get(AuthorizationObjectType.PSI_CA), interaction).execute();
+  }
+
+  public static void runProtocol(ProtocolType protocol, final Map<AuthorizationObjectType, AuthorizationObject> authMaps,
       final ProfileDownloadCallback callback, final Context c, 
       final CommunicationService cs, final Device connectedDevice, List<ProfileObject> contactList,
-      Interaction interaction) throws Exception {
-    
-    if(protocol.equals(PSICA)) {
-
-      // prepare before running PSiCA
-      if (authMaps == null || contactList == null) {
-        Log.i(TAG, "Authorization or contactList not loaded, aborting test");  
-        throw new Exception("invalid protocol");
-      }
+      final Interaction interaction) throws Exception {
+  
+    if(protocol.equals(ProtocolType.BPSICA)) {
+      Log.i(TAG, "Running bpsica");
+      new CommonFriendsBearerCardinalityTest(cs, authMaps.get(AuthorizationObjectType.B_PSI_CA), callback).execute(new String[0]);
+    } else if(protocol.equals(ProtocolType.PSICA)) {
+      Log.i(TAG, "Running psica");
+      new CommonFriendsCardinalityTest(cs, authMaps.get(AuthorizationObjectType.PSI_CA), callback).execute();
+    } else if(protocol.equals(ProtocolType.IDX)) {
+      Log.i(TAG, "Start identity exchange");
       
-      if(!authMaps.containsKey(AuthorizationObjectType.PSI) && !authMaps.containsKey(AuthorizationObjectType.PSI_CA)) {
-        Log.e(TAG, "auths dont exist, aborting test");
-        throw new Exception("invalid protocol");
-      }
+      // TODO: we prolly should do PSI before IDX because one way to trigger IDX protocol is 
+      // pressing id-x button after psi is done
+      // if somehow the peer switched accounts before exchanging identity but after completing PSI
+      // we might id-x with wrong person
 
+      // if the connected device is in the identity-exchange list, then no need to show alert dialog
+      Set<String> pendingExchangeAddr = PreferenceManager.getDefaultSharedPreferences(c).getStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, new HashSet<String>());
+      if(pendingExchangeAddr.contains(connectedDevice.getAddress())) {
+        runIDXProtocol(cs, callback, authMaps, interaction);
+      } 
+        
+    } else if(protocol.equals(ProtocolType.PSI)) {
       String[] input = new String[contactList.size()];
       for( int i=0; i < contactList.size(); i++) {
         input[i] = contactList.get(i).getUid();
       }
-      
-      Log.i(TAG, "Start common friends cardinality");
-      new CommonFriendsCardinalityTest(cs, authMaps.get(AuthorizationObjectType.PSI_CA), authMaps.get(AuthorizationObjectType.PSI), callback, interaction, input).execute(input);
-    } else if(protocol.equals(IDX)) {
-      Log.i(TAG, "Start identity exchange");
-      new IdentityExchangeProtocol(cs, callback, authMaps.get(AuthorizationObjectType.PSI_CA), interaction).execute();
-    } else {
+      new CommonFriendsTest(cs, authMaps.get(AuthorizationObjectType.PSI), callback, interaction).execute(input);
+   } else {
       throw new Exception("Invalid protocol: "+protocol);
-    }
+   }
+//    else {
+        
+        // post notification
+
+//        PendingIntent pendingIntent = PendingIntent.getActivity(c, 0, new Intent(), PendingIntent.FLAG_UPDATE_CURRENT);
+//        pendingIntent.send(0, new OnFinished() {
+//          
+//          @Override
+//          public void onSendFinished(PendingIntent pendingIntent, Intent intent,
+//              int resultCode, String resultData, Bundle resultExtras) {
+//            Log.d(TAG, "sent!");
+//            runIDXProtocol(cs, callback, authMaps, interaction);
+//          }
+//        }, null);
+//
+//       new Notification.Builder(c)
+//        // Add media control buttons that invoke intents in your media service
+//        .addAction(R.drawable.arrow_down_float, "Previous", pendingIntent)
+//        .setContentTitle("IDX")
+//        .setContentText("Do you want to exchange?")
+//        .build();
+        
+        // show alert dialog
+        
+//        // get current foreground activity
+//        Activity currentActivity = ((FriendFinderApplication)c.getApplicationContext()).getCurrentActivity();
+//        
+//        // if we dont own current activity, i guess just exit
+//        // TODO: best thing to do in this case?
+//        if(currentActivity == null) {
+//          Log.e(TAG, "We dont own current foreground activity -> cant show alert dialog");
+//          callback.onError();
+//          return;
+//        }
+//        Log.i(TAG, "current activity: "+currentActivity.toString());
+//        
+//        
+//        // show alert dialog
+//        // TODO: need to reword on message
+//        new AlertDialog.Builder(currentActivity)
+//        .setCancelable(true)
+//        .setTitle("Identity Exchange")
+//        .setMessage("Do you want to exchange identity with device "+connectedDevice.getName())
+//        .setPositiveButton(R.string.yes, new DialogInterface.OnClickListener() {
+//          public void onClick(DialogInterface dialog, int whichButton)
+//          {
+//            dialog.dismiss();
+//            
+//            runIDXProtocol(cs, callback, authMaps, interaction);
+//            return;
+//          }
+//        })
+//        .setNegativeButton(R.string.no, new DialogInterface.OnClickListener() {
+//          public void onClick(DialogInterface dialog, int whichButton)
+//          {
+//            dialog.dismiss();
+//            cs.write(new byte[1]);
+//            
+//            // just to complete the loop
+//            cs.read();
+//            
+//            callback.onError();
+//            return;
+//          }
+//        }).show();
+//      }
+      
+//    } 
   }
+  
 }

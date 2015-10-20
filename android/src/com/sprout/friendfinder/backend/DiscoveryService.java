@@ -49,10 +49,10 @@ import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 import com.sprout.friendfinder.crypto.protocols.NegotiationProtocol;
 import com.sprout.friendfinder.crypto.protocols.ProtocolManager;
+import com.sprout.friendfinder.crypto.protocols.ProtocolManager.ProtocolType;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
-import com.sprout.friendfinder.ui.baseui.InteractionBaseActivity;
 import com.sprout.friendfinder.ui.InteractionItem;
 import com.sprout.friendfinder.ui.LoginActivity;
 
@@ -300,6 +300,7 @@ public class DiscoveryService extends Service {
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI).save();
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA_DEP).save();
           AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.PSI_CA).save();
+          AuthorizationDownloader.download(DiscoveryService.this, grant.getKey(), grant.getSecret(), AuthorizationObjectType.B_PSI_CA).save();
           
           if(V) Log.d(TAG, "Downloads complete");
         } catch (NullPointerException e) {
@@ -369,6 +370,7 @@ public class DiscoveryService extends Service {
     final List<AuthorizationObjectType> AUTH_TYPES = new ArrayList<AuthorizationObjectType>() {{
       add(AuthorizationObjectType.PSI);
       add(AuthorizationObjectType.PSI_CA);
+      add(AuthorizationObjectType.B_PSI_CA);
     }};
     
     try {
@@ -761,7 +763,7 @@ public class DiscoveryService extends Service {
     mRunningDevice = i.next();
     i.remove();
     
-    if(ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice).equals(ProtocolManager.NONE)) {
+    if(ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice).equals(ProtocolType.NONE)) {
       run();
     } else {
       Log.i(TAG, "Trying to connect device: "+mRunningDevice);
@@ -801,19 +803,20 @@ public class DiscoveryService extends Service {
     setState(STATE_CONNECTED);
     
     // figure out what protocol "I" want to run with this device
-    final String protocolType = ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice);
+    final ProtocolType protocolType = ProtocolManager.getProtocolType(this, mDeviceCache, mRunningDevice);
     Log.i(TAG, "before negotiation phase, I want to run "+protocolType+" with device: "+mRunningDevice);
     
     // start negotiation phase
-    new NegotiationProtocol(mMessageService, protocolType, new ProfileDownloadCallback() {
+    new NegotiationProtocol(mMessageService, protocolType, new ProtocolCallback() {
 
       @Override
-      public void onComplete() {
+      public void onComplete(Object o) {
         // now we know what protocol we should run..
         // TODO: for now, assume we will run protocol if my protocol matches his
         try {
-          Log.i(TAG, "negotiation is completed, now running protocol "+protocolType+" with device: "+mRunningDevice);
-          runProtocol(protocolType);
+          ProtocolType resultProtocol = (ProtocolType) o;
+          Log.i(TAG, "negotiation is completed, now running protocol "+resultProtocol+" with device: "+mRunningDevice);
+          runProtocol(resultProtocol);
         } catch (Exception e) {
           Log.i(TAG, "fail to run protocol");
           e.printStackTrace();
@@ -822,7 +825,7 @@ public class DiscoveryService extends Service {
       }
 
       @Override
-      public void onError() {
+      public void onError(Object o) {
         run();
       }
       
@@ -830,8 +833,8 @@ public class DiscoveryService extends Service {
     
   }
   
-  private ProfileDownloadCallback getProfileDownloadCallback(String protocolType, final Interaction interaction) {
-    if(protocolType.equals(ProtocolManager.IDX)) {
+  private ProfileDownloadCallback getProfileDownloadCallback(ProtocolType protocolType, final Interaction interaction) {
+    if(protocolType.equals(ProtocolType.IDX)) {
         return new ProfileDownloadCallback() {
         
           @Override
@@ -863,7 +866,7 @@ public class DiscoveryService extends Service {
             pref.edit()
             .putStringSet(InteractionItem.EXCHANGE_IDENTITY_ADDR, pendingExchangeAddr)
             .putStringSet(LAST_SCAN_DEVICES_PREF, lastScanAddrSet)
-            .putBoolean(InteractionBaseActivity.RELOAD_ADAPTER_PREF, true)
+//            .putBoolean(InteractionBaseActivity.RELOAD_ADAPTER_PREF, true)
             .apply();
             
             // TODO: do something with interaction and save it
@@ -876,7 +879,37 @@ public class DiscoveryService extends Service {
           }
           
         };
-    } else if(protocolType.equals(ProtocolManager.PSI) || protocolType.equals(ProtocolManager.PSICA)) {
+    } else if (protocolType.equals(ProtocolType.PSICA) || protocolType.equals(ProtocolType.BPSICA)) {
+      
+      return new ProfileDownloadCallback() {
+        @Override
+        public void onComplete() {
+          try {
+            Log.i(TAG, "Successfully compute cardinality, now go to PSI");
+            runProtocol(ProtocolType.PSI);
+          } catch (Exception e) {
+            e.printStackTrace();
+            run();
+          }
+        }
+
+        @Override
+        public void onError() {
+          if(D) Log.i(TAG, "Error occured connecting to [device]");
+          
+          interaction.failed = true;
+          interaction.save();
+          
+          // TODO: we should increment device's failed counter
+          // If it is less than maximum retry attempts we should try again (possibly on next discovery)
+          // We also need to clear any state that we have saved due to contact with device
+          // For now, we simply do nothing.
+          run();
+          
+        }
+      };
+    
+    } else if(protocolType.equals(ProtocolType.PSI)) {
       return new ProfileDownloadCallback() {
 
         // After this protocol completes, we enter the ready state
@@ -924,9 +957,9 @@ public class DiscoveryService extends Service {
     } else return null;
   }
   
-  private void runProtocol(String protocolType) throws Exception  {
+  private void runProtocol(ProtocolType protocolType) throws Exception  {
     final Interaction interaction;
-    if(protocolType.equals(ProtocolManager.IDX)) {
+    if(protocolType.equals(ProtocolType.IDX)) {
       //TODO: using address is wrong, maybe need to use id instead
       interaction = (Interaction) new Select().from(Interaction.class).where("address=?", mRunningDevice.getAddress()).orderBy("timestamp DESC").executeSingle();
     } else {
@@ -1039,5 +1072,10 @@ public class DiscoveryService extends Service {
     public interface ProfileDownloadCallback {
       public void onComplete();
       public void onError();
+    }
+    
+    public interface ProtocolCallback {
+      public void onComplete(Object o);
+      public void onError(Object o);
     }
 }

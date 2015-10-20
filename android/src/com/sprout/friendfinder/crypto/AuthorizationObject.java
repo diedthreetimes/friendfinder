@@ -84,7 +84,7 @@ public class AuthorizationObject extends Model implements Serializable {
   private transient ArrayList<String> orderedInput;
   
   public enum AuthorizationObjectType {
-	  PSI, PSI_CA, PSI_CA_DEP;
+	  PSI, PSI_CA, PSI_CA_DEP, B_PSI_CA;
   }
   
   @Column
@@ -156,18 +156,25 @@ public class AuthorizationObject extends Model implements Serializable {
     super();
     this.type = type;
     loadCert(ctx);
+    Log.d(TAG, response.toString());
     JSONObject jObject = new JSONObject(response);
 
     JSONObject msg = jObject.getJSONObject("psi_message");
     
-    String Rstring = (String) msg.get("secret");
-    Log.d(TAG, "Rstring: "+Rstring);
-    String[] RstringList = Rstring.split(" ");
-
-    R = decode( RstringList[0] );
-    if(type.equals(AuthorizationObjectType.PSI_CA_DEP)) {
-      R2 = decode( RstringList[1] );
-      Log.d(TAG, "R1: "+RstringList[0]+"   R2: "+RstringList[1]);
+    // bearer psica dont need a secret
+    if(msg.has("secret")) {
+    
+      String Rstring = (String) msg.get("secret");
+      Log.d(TAG, "Rstring: "+Rstring);
+      String[] RstringList = Rstring.split(" ");
+  
+      R = decode( RstringList[0] );
+      if(type.equals(AuthorizationObjectType.PSI_CA_DEP)) {
+        // old psi ca need 2 secrets
+        R2 = decode( RstringList[1] );
+        Log.d(TAG, "R1: "+RstringList[0]+"   R2: "+RstringList[1]);
+      }
+      
     }
 
     auth = msg.getString("signed_message");
