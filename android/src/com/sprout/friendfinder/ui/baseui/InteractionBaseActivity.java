@@ -14,6 +14,7 @@ import com.sprout.friendfinder.ui.ItemAdapter;
 import com.sprout.friendfinder.ui.ItemAdapter.RowType;
 import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
+import android.app.ListActivity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
@@ -31,7 +32,7 @@ import android.widget.ListView;
  * @author Oak
  *
  */
-public abstract class InteractionBaseActivity extends BaseListActivity {
+public abstract class InteractionBaseActivity extends ListActivity {
 
 	private static final String TAG = InteractionBaseActivity.class.getSimpleName();
 	protected OnSharedPreferenceChangeListener listener;
