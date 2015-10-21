@@ -6,6 +6,7 @@ import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
+import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.ATWBearerPSICA;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
@@ -23,7 +24,8 @@ public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
       Log.e(TAG,  errorMsg);
       throw new IllegalArgumentException(errorMsg);
     }
-    
+
+    setBenchmark(Config.getBenchmark());
     callback = cb;
   }
   
