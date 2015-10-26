@@ -11,6 +11,7 @@ import com.sprout.friendfinder.ui.ItemAdapter.RowType;
 import com.sprout.friendfinder.ui.baseui.Item;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
@@ -75,6 +76,19 @@ public class InteractionItem implements Item {
 	    if (interaction != null && interaction.sharedContacts != null) {
 	      viewHolder.contactsSize.setText(context.getString(R.string.number_of_contacts, interaction.sharedContacts.getContactList().size()));
 	    }
+	    
+	    viewHolder.startMessaging.setOnClickListener(new OnClickListener() {
+          
+          @Override
+          public void onClick(View v) {
+            Intent i = new Intent(context, BluetoothChatActivity.class);
+            i.putExtra(InteractionItem.EXTRA_DEVICE_ADDR, interaction.address);
+            context.startActivity(i);
+            // TODO: need to find a clean way to stop DiscoveryService and start BluetoothChatService
+            // or combine both services...
+          }
+          
+        });
 	    
 	    // TODO: Set on click listener for the two buttons
 	    viewHolder.exchangeIdentity.setOnClickListener(new OnClickListener() {
