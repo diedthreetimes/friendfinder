@@ -53,6 +53,12 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
   @Override
   protected List<String> conductServerTest(CommunicationService s,
       String... input) {
+
+    Log.d(TAG, "STARTING TEST");
+    
+    if (benchmark) {
+      onlineWatch.start();
+    }
     
     // key exchange
     byte[] serverPK = requestor_key_pair.getPublic().getEncoded();
@@ -68,12 +74,7 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
     }
     
     // send and receive bearer capabilities
-//    List<String> serverBearerCapabilities = new ArrayList<String>();
     List<byte[]> serverBearerCapabilities = new ArrayList<byte[]>();
-//    List<String> clientBearerCapabilities = new ArrayList<String>();
-    
-//    s.write(capabilities.size()+"");
-//    int clientCapSize = Integer.parseInt(s.readString());
 
     BloomFilter<String> bf = new BloomFilter<String>(BF_FALSE_POSITIVE, capabilities.size());
     
@@ -86,10 +87,7 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
       System.arraycopy(serverPK, 0, bearerCap, ciArray.length, serverPK.length);
       System.arraycopy(clientPK, 0, bearerCap, ciArray.length+serverPK.length, clientPK.length);
       
-//      String cap = hash(bearerCap, (byte) 0).toString(16);
-//      Log.d(TAG, "my bearer cap: "+cap);
       serverBearerCapabilities.add(bearerCap);
-//      s.write(cap);
 
       bf.add(bearerCap);
     }
@@ -108,6 +106,7 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
         results.add(hash(bearerCap, (byte) 0).toString(16));
       }
     }
+    Log.i(TAG, "Number of intersection before verification: "+results.size());
     
     // verify intersection results
     // TODO: is it secure?
@@ -116,17 +115,14 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
     @SuppressWarnings("unchecked")
     List<String> theirResult = (ArrayList<String>) Base64.decodeToObject(s.readString());
     results.retainAll(theirResult);
+    Log.i(TAG, "Number of intersection after verification: "+results.size());
     // doesnt matter what to return, we only need size of results
+
+    if (benchmark) {
+      onlineWatch.pause();
+    }
+    
     return results;
-    
-//    for(int i=0; i<clientCapSize; i++) {
-//      clientBearerCapabilities.add(s.readString());
-//      Log.d(TAG, "their bearer cap: "+clientBearerCapabilities.get(i));
-//    }
-    
-    // compute intersection
-//    clientBearerCapabilities.retainAll(serverBearerCapabilities);
-//    return clientBearerCapabilities;
   }
   
   @Override
