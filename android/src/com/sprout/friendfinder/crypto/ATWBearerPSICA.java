@@ -1,5 +1,6 @@
 package com.sprout.friendfinder.crypto;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
@@ -8,9 +9,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
+
+import org.brickred.socialauth.util.Base64;
 
 import android.util.Log;
 
@@ -66,12 +68,12 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
     }
     
     // send and receive bearer capabilities
-    List<String> serverBearerCapabilities = new ArrayList<String>();
-    List<String> clientBearerCapabilities = new ArrayList<String>();
-    List<String> intersection = new ArrayList<String>();
+//    List<String> serverBearerCapabilities = new ArrayList<String>();
+    List<byte[]> serverBearerCapabilities = new ArrayList<byte[]>();
+//    List<String> clientBearerCapabilities = new ArrayList<String>();
     
-    s.write(capabilities.size()+"");
-    int clientCapSize = Integer.parseInt(s.readString());
+//    s.write(capabilities.size()+"");
+//    int clientCapSize = Integer.parseInt(s.readString());
 
     BloomFilter<String> bf = new BloomFilter<String>(BF_FALSE_POSITIVE, capabilities.size());
     
@@ -84,43 +86,47 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
       System.arraycopy(serverPK, 0, bearerCap, ciArray.length, serverPK.length);
       System.arraycopy(clientPK, 0, bearerCap, ciArray.length+serverPK.length, clientPK.length);
       
-      String cap = hash(bearerCap, (byte) 0).toString(16);
-      serverBearerCapabilities.add(cap);
-      Log.d(TAG, "my bearer cap: "+cap);
-      s.write(cap);
+//      String cap = hash(bearerCap, (byte) 0).toString(16);
+//      Log.d(TAG, "my bearer cap: "+cap);
+      serverBearerCapabilities.add(bearerCap);
+//      s.write(cap);
 
-//      bf.add(cap);
+      bf.add(bearerCap);
     }
     
     // send bloom filter
-//    String bitSetString = toString(bf.getBitSet());
-//    s.write(bf.size()+"");
-//    s.write(bf.count()+"");
-//    s.write(bitSetString);
+    s.write(Base64.encodeObject(bf));
 
     // receive bloom filter
-//    int recvBitSetSize = Integer.parseInt(s.readString());
-//    int recvNumElements = Integer.parseInt(s.readString());
-//    BitSet recvBitSet = fromString(s.readString());
+    @SuppressWarnings("unchecked")
+    BloomFilter<String> clientBf = (BloomFilter<String>) Base64.decodeToObject(s.readString());
     
-//    BloomFilter<String> clientBf = new BloomFilter<String>(recvBitSetSize, recvNumElements,
-//        recvNumElements, recvBitSet);
-//    for(String bCap : serverBearerCapabilities) {
-//      if(clientBf.contains(bCap)) {
-//        intersection.add(bCap);
-//      }
-//    }
-    
-    for(int i=0; i<clientCapSize; i++) {
-      clientBearerCapabilities.add(s.readString());
-      Log.d(TAG, "their bearer cap: "+clientBearerCapabilities.get(i));
+    // compute intersection and hash result
+    List<String> results = new ArrayList<String>();
+    for(byte[] bearerCap : serverBearerCapabilities) {
+      if(clientBf.contains(bearerCap)) {
+        results.add(hash(bearerCap, (byte) 0).toString(16));
+      }
     }
     
-    // compute intersection
-    clientBearerCapabilities.retainAll(serverBearerCapabilities);
-    return clientBearerCapabilities;
+    // verify intersection results
+    // TODO: is it secure?
+    Collections.shuffle(results, new SecureRandom());
+    s.write(Base64.encodeObject((Serializable) results));
+    @SuppressWarnings("unchecked")
+    List<String> theirResult = (ArrayList<String>) Base64.decodeToObject(s.readString());
+    results.retainAll(theirResult);
+    // doesnt matter what to return, we only need size of results
+    return results;
     
-//    return intersection;
+//    for(int i=0; i<clientCapSize; i++) {
+//      clientBearerCapabilities.add(s.readString());
+//      Log.d(TAG, "their bearer cap: "+clientBearerCapabilities.get(i));
+//    }
+    
+    // compute intersection
+//    clientBearerCapabilities.retainAll(serverBearerCapabilities);
+//    return clientBearerCapabilities;
   }
   
   @Override
@@ -148,13 +154,4 @@ public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<Strin
     }
     return new String(hexChars);
   }
-  
-  private BitSet fromString(final String s) {
-      return BitSet.valueOf(new long[] { Long.parseLong(s, 2) });
-  }
-  
-  private String toString(BitSet bs) {
-    return Long.toString(bs.toLongArray()[0], 2);
-  }
-
 }
