@@ -65,14 +65,22 @@ class AuthorityController < ApplicationController
   def test_connections
     resp = {}
 
-    friends = 100.times.to_a
+    num_random_friend = 450
+    random_friend = rand(1...num_random_friend)
+    friends = 50.times.to_a + num_random_friend.times.to_a.collect{ |n| n+num_random_friend*random_friend}
+    resp[:random_friend] = random_friend
 
     resp[:count] = friends.count
     if !params[:include_connections].nil?
       resp[:connections] = friends.collect{|x| x.to_s }
     end
 
-    resp[:psi_message] = HbcPsi.sig_message(friends.collect{|x| x.to_s})
+    # resp[:psi_message] = HbcPsi.sig_message(friends.collect{|x| x.to_s})
+    if params[:protocol] == 'b_psi_ca'
+      resp[:psi_message] = HbcBPsiCa.issue_capabilities(friends.collect {|x| x})
+    else
+      resp[:psi_message] = HbcPsi.sig_message(friends.collect{|x| x.to_s}, params[:protocol])
+    end
 
     respond_with( resp )
   end
