@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.activeandroid.query.Select;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.backend.DeviceCache;
@@ -17,6 +18,7 @@ import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 import com.sprout.friendfinder.models.Interaction;
+import com.sprout.friendfinder.models.Message;
 import com.sprout.friendfinder.models.ProfileObject;
 import com.sprout.friendfinder.ui.InteractionItem;
 
@@ -24,7 +26,7 @@ public class ProtocolManager {
   
   // going to add protocol type/policy type in policy when implemented
   public enum ProtocolType {
-    NONE(0), IDX(4), PSI(2), PSICA(3), BPSICA(4);
+    NONE(0), MSG(1), IDX(2), PSI(3), PSICA(4), BPSICA(5);
     
     int priority;
     private ProtocolType(int val) {
@@ -48,6 +50,16 @@ public class ProtocolManager {
   public static ProtocolType getProtocolType(Context context, DeviceCache deviceCache, Device connectedDevice) {
     Log.i(TAG, "getting type of protocol");
     
+    // check for unsent msg
+    // TODO: re-order these priority..
+
+    Message m = new Select().from(Message.class).where("address = ?", connectedDevice.getAddress())
+        .where("sent = ?", 0).executeSingle();
+    if(m!=null) {
+      Log.i(TAG, "return MSG");
+      return ProtocolType.MSG;
+    }
+    
     // first check if the identity exchange button was clicked or policy allowed it
     // TODO: implement policy, now just check idx button
     SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(context);
@@ -66,27 +78,26 @@ public class ProtocolManager {
 
     Log.i(TAG, "return NONE");
     return ProtocolType.NONE;
-    
   }
   
   private static void runIDXProtocol(CommunicationService cs, ProtocolCallback callback,
       final Map<AuthorizationObjectType, AuthorizationObject> authMaps,
       final Interaction interaction) {
     
-    // check if the other side still wants to run IDX
-    // any better way to confirm that both side wanna do IDX?
-    byte[] send = new byte[1];
-    send[0] = (byte) 1;
-    cs.write(send);
-    
-    byte[] recv = cs.read();
-
-    if(recv == null || recv.length != 1 || recv[0] != (byte) 1) {
-      Log.i(TAG, "Error when reading recv: "+recv.toString());
-      callback.onError(null);
-      return;
-    }
-    
+//    // check if the other side still wants to run IDX
+//    // any better way to confirm that both side wanna do IDX?
+//    byte[] send = new byte[1];
+//    send[0] = (byte) 1;
+//    cs.write(send);
+//    
+//    byte[] recv = cs.read();
+//
+//    if(recv == null || recv.length != 1 || recv[0] != (byte) 1) {
+//      Log.i(TAG, "Error when reading recv: "+recv.toString());
+//      callback.onError(null);
+//      return;
+//    }
+    // reuse psi_ca authorizer for idx protocol
     new IdentityExchangeProtocol(cs, callback, authMaps.get(AuthorizationObjectType.PSI_CA), interaction).execute();
   }
 
@@ -95,7 +106,10 @@ public class ProtocolManager {
       final CommunicationService cs, final Device connectedDevice, List<ProfileObject> contactList,
       final Interaction interaction) throws Exception {
   
-    if(protocol.equals(ProtocolType.BPSICA)) {
+    if(protocol.equals(ProtocolType.MSG)) {
+      Log.i(TAG, "Running msg");
+      new MessageProtocol(cs, connectedDevice.getAddress(), callback).execute();
+    } else if(protocol.equals(ProtocolType.BPSICA)) {
       Log.i(TAG, "Running bpsica");
       new CommonFriendsBearerCardinalityTest(cs, authMaps.get(AuthorizationObjectType.B_PSI_CA), callback).execute(new String[0]);
     } else if(protocol.equals(ProtocolType.PSICA)) {

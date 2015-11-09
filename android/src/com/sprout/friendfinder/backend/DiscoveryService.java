@@ -53,6 +53,7 @@ import com.sprout.friendfinder.crypto.protocols.ProtocolManager.ProtocolType;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
+import com.sprout.friendfinder.ui.BluetoothMessageActivity;
 import com.sprout.friendfinder.ui.InteractionItem;
 import com.sprout.friendfinder.ui.LoginActivity;
 
@@ -954,12 +955,54 @@ public class DiscoveryService extends Service {
           run();
         }
       };
-    } else return null;
+    }   else if(protocolType.equals(ProtocolType.MSG)) {
+      return new ProtocolCallback() {
+
+        @Override
+        public void onComplete(Object o) {
+          if(o != null && (Integer) o > 0) {
+
+            SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
+            Set<String> anm = new HashSet<String>(mPrefs.getStringSet(BluetoothMessageActivity.ADDRESS_NEW_MESSAGES, new HashSet<String>()));
+            anm.add(interaction.address);
+            PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit()
+            .putStringSet(BluetoothMessageActivity.ADDRESS_NEW_MESSAGES, anm)
+            .apply();
+          }
+          // TODO: do anything about interaction??
+          
+          run();
+          
+        }
+  
+        @Override
+        public void onError(Object o) {
+          
+          // TODO: do anything about interaction??
+          
+          run();
+          
+        }
+      };
+    } else return new ProtocolCallback() {
+
+      @Override
+      public void onComplete(Object o) {
+        run();
+        
+      }
+
+      @Override
+      public void onError(Object o) {
+        run();
+        
+      }
+    };
   }
   
   private void runProtocol(ProtocolType protocolType) throws Exception  {
     final Interaction interaction;
-    if(protocolType.equals(ProtocolType.IDX)) {
+    if(protocolType.equals(ProtocolType.IDX) || protocolType.equals(ProtocolType.MSG)) {
       //TODO: using address is wrong, maybe need to use id instead
       interaction = (Interaction) new Select().from(Interaction.class).where("address=?", mRunningDevice.getAddress()).orderBy("timestamp DESC").executeSingle();
     } else {

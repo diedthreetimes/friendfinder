@@ -60,6 +60,13 @@
             android:name=".ui.BluetoothChatActivity"
             android:label="@string/app_name" >
         </activity>
+        
+         <activity
+            android:name=".ui.BluetoothMessageActivity"
+            android:label="@string/app_name" >
+        </activity>
+        
+         
              
         <service
             android:name=".backend.DiscoveryService"

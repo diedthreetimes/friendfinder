@@ -81,7 +81,7 @@ public class InteractionItem implements Item {
           
           @Override
           public void onClick(View v) {
-            Intent i = new Intent(context, BluetoothChatActivity.class);
+            Intent i = new Intent(context, BluetoothMessageActivity.class);
             i.putExtra(InteractionItem.EXTRA_DEVICE_ADDR, interaction.address);
             context.startActivity(i);
             // TODO: need to find a clean way to stop DiscoveryService and start BluetoothChatService
