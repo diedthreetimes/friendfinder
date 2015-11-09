@@ -23,11 +23,9 @@ import com.sprout.finderlib.crypto.AbstractPSIProtocol;
 public class ATWBearerPSICA extends AbstractPSIProtocol<String, Void, List<String>> {
 
   private final String DH_ALGORITHM = "EC";
-  private final double BF_FALSE_POSITIVE = 0.1;
+  private final double BF_FALSE_POSITIVE = 0.0001;
   static String TAG = ATWBearerPSICA.class.getSimpleName();
   List<BigInteger> capabilities;
-  BigInteger Pkl;
-  BigInteger Pkr;
   KeyPair requestor_key_pair;
   boolean amIClient = false;
 
