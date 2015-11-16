@@ -3,6 +3,7 @@
 
     <string name="app_name">Unlinked</string>
     <string name="menu_settings">Settings</string>
+    <string name="protocol_testing">Protocol Testings</string>
 
     <!-- Contact Layout Strings -->
     <string name="profile_image_desc">Profile Image</string>
@@ -35,5 +36,15 @@
     <string name="pref_add_notification_key">pref_add_notification</string>
     <string name="pref_add_notification_title">Add a notification</string>
     <string name="pref_add_notification_summary">Test expanding/collapsing notifications.</string>
+    
+    <!-- radio button values for protocol testing -->
+    <string name="rb_psica">PSICA</string>
+    <string name="rb_b_bf_psi">Bearer Capabilities Bloom Filter PSI</string>
+    <string name="rb_b_bf_psica">Bearer Capabilities Bloom Filter PSICA</string>
+    <string name="rb_b_psica">Bearer Capabilities PSICA (without BF)</string>
+    <string name="rb_b_bf_psi_no_v">Bearer Bloom Filter Capabilities Bloom Filter PSI without verification</string>
+    <string name="rb_atwpsi">Authorized Two-way PSI</string>
+    <string name="rb_atwpsica_new">Authorized Two-way PSICA (more efficient)</string>
+    <string name="rb_atwpsica">Authorized Two-way PSICA</string>
 
 </resources>

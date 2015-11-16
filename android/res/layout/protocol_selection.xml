@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+    <RadioGroup
+        android:id="@+id/protocol_selections"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" >
+        
+	    <RadioButton android:id="@+id/radio_psi_ca"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/rb_psica"
+	        android:checked="true"/>
+	    <RadioButton android:id="@+id/radio_b_bf_psi"
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="@string/rb_b_bf_psi"/>
+      <RadioButton android:id="@+id/radio_b_bf_psi_ca"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/rb_b_bf_psica"/>
+      <RadioButton android:id="@+id/radio_b_psi_ca"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/rb_b_psica"/>
+      <RadioButton android:id="@+id/radio_b_bf_psi_no_v"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/rb_b_bf_psi_no_v"/>
+      <RadioButton android:id="@+id/radio_atw_psi"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/rb_atwpsi"/>
+      <RadioButton android:id="@+id/radio_atw_psi_ca_new"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/rb_atwpsica_new"/>
+      <RadioButton android:id="@+id/radio_atw_psi_ca"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="@string/rb_atwpsica"/>
+    
+    </RadioGroup>
+    
+     <Button
+        android:id="@+id/start_test"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Test" />
+</RadioGroup>

@@ -66,6 +66,10 @@
             android:label="@string/app_name" >
         </activity>
         
+        <activity
+            android:name=".ui.ProtocolTestActivity"
+            android:label="@string/app_name" >
+        </activity>
          
              
         <service

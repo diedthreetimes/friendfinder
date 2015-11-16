@@ -17,6 +17,7 @@ import com.sprout.friendfinder.backend.DiscoveryService;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.ui.baseui.InteractionBaseActivity;
 import com.sprout.friendfinder.ui.baseui.Item;
+import com.sprout.friendfinder.ui.settings.SettingsActivity;
 
 
 // TODO: Rename this to HistoryActivity
@@ -69,12 +70,21 @@ public class MainActivity extends InteractionBaseActivity {
     super.onStart();
   }
 
+  
+  protected void launchProtocolTests() {
+    Intent intent = new Intent(this, ProtocolTestActivity.class);
+    intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+    startActivity(intent);
+  }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
     case R.id.settings:
       launchSettings();
+      return true;
+    case R.id.protocols:
+      launchProtocolTests();
       return true;
     default: return super.onOptionsItemSelected(item);
     }
