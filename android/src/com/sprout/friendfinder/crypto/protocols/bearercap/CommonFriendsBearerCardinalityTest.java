@@ -1,4 +1,4 @@
-package com.sprout.friendfinder.crypto.protocols;
+package com.sprout.friendfinder.crypto.protocols.bearercap;
 
 import java.util.List;
 
@@ -7,14 +7,22 @@ import android.util.Log;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.common.Config;
-import com.sprout.friendfinder.crypto.ATWBearerPSICA;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 
-public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
+public class CommonFriendsBearerCardinalityTest extends BPSICA {
 
   static final String TAG = CommonFriendsBearerCardinalityTest.class.getSimpleName();
   ProtocolCallback callback;
+  boolean testAppFlag = false;
+
+  public CommonFriendsBearerCardinalityTest(CommunicationService s,
+      AuthorizationObject bpsiCaAuth, ProtocolCallback cb, boolean testApp) {
+    this(s, bpsiCaAuth, cb);
+    
+    setBenchmark(testApp);
+    testAppFlag = testApp;
+  }
 
   public CommonFriendsBearerCardinalityTest(CommunicationService s,
       AuthorizationObject bpsiCaAuth, ProtocolCallback cb) {
@@ -46,6 +54,10 @@ public class CommonFriendsBearerCardinalityTest extends ATWBearerPSICA {
 
   @Override
   public void onPostExecute(List<String> result) {
+    if(testAppFlag) {
+      callback.onComplete(getTotalOnlineTime());
+      return;
+    }
     if(result == null) {
       callback.onError(null);
       return;
