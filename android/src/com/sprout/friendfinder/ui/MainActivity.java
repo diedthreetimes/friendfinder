@@ -72,6 +72,12 @@ public class MainActivity extends InteractionBaseActivity {
 
   
   protected void launchProtocolTests() {
+
+    // we prolly shouldnt stop it right away but
+    // its ok for now since its for testing. dont care if its breaking
+    Intent disIntent = new Intent(this, DiscoveryService.class);
+    stopService(disIntent);
+    
     Intent intent = new Intent(this, ProtocolTestActivity.class);
     intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
     startActivity(intent);
