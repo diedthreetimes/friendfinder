@@ -23,16 +23,10 @@ public class AuthorizationDownloader {
   private static final String TAG = AuthorizationDownloader.class.getSimpleName();
   private static final boolean D = true;
   
-  public static AuthorizationObject download(Context context, String token, String secret, AuthorizationObjectType type)
-      throws ClientProtocolException, IOException, JSONException, CertificateException {
+  public static AuthorizationObject download(Context context, AuthorizationObjectType type, HttpGet httpGet) 
+      throws ClientProtocolException, IOException, CertificateException, JSONException {
 
     DefaultHttpClient httpClient = new DefaultHttpClient();
-    HttpGet httpGet = new HttpGet("http://"+Config.getHost()+Config.getContactJsonUrl() +
-    		"?oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
-    		"&oauth_secret=" + secret + // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
-    		"&include_connections=true" +
-    		"&protocol=" + type.name().toLowerCase()
-    		);
     
     if(D) Log.d(TAG, "Attempting a get of " + httpGet.getURI());
     
@@ -53,6 +47,31 @@ public class AuthorizationDownloader {
     bufReader.close(); 
     
     return new AuthorizationObject(context, result, type);
+  }
+
+  public static AuthorizationObject downloadTest(Context context, String token, String secret, AuthorizationObjectType type, int numFriends)
+      throws ClientProtocolException, IOException, JSONException, CertificateException {
+
+    HttpGet httpGet = new HttpGet("http://"+Config.getHost()+Config.getContactJsonUrl(true) +
+            "?include_connections=true" +
+            "&protocol=" + type.name().toLowerCase() +
+            "&num_friends=" + numFriends
+            );
+    
+    return download(context, type, httpGet);
+  }
+  
+  public static AuthorizationObject download(Context context, String token, String secret, AuthorizationObjectType type)
+      throws ClientProtocolException, IOException, JSONException, CertificateException {
+
+    HttpGet httpGet = new HttpGet("http://"+Config.getHost()+Config.getContactJsonUrl() +
+    		"?oauth_access_token=" + token + // 694d1dd7-6feb-4538-bb13-44497a3d778f
+    		"&oauth_secret=" + secret + // fa4d85f2-0d0d-4c91-90eb-d8544e26f83b
+    		"&include_connections=true" +
+    		"&protocol=" + type.name().toLowerCase()
+    		);
+    
+    return download(context, type, httpGet);
   }
 
 }

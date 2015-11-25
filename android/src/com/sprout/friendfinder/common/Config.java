@@ -14,6 +14,14 @@ public class Config {
     return benchmark;
   }
   
+  public static String getContactJsonUrl(boolean test) {
+    if (test) {
+      return "/authority/test_connections.json";
+    } else { 
+      return "/authority/download_connections.json";
+    }
+  }
+  
   public static String getHost() {
     if (local) { 
       return "creepyer.ics.uci.edu:3000";
