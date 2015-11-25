@@ -84,7 +84,7 @@ public class AuthorizationObject extends Model implements Serializable {
   private transient ArrayList<String> orderedInput;
   
   public enum AuthorizationObjectType {
-	  PSI, PSI_CA, PSI_CA_DEP, B_PSI_CA;
+	  PSI, PSI_CA, PSI_CA_DEP, B_PSI_CA, NONE;
   }
   
   @Column
