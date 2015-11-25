@@ -83,11 +83,13 @@ public class ATWPSICA extends ATWPSIProtocol {
 
     List<BigInteger> zivis = authObj.getData();
     List<BigInteger> zis = zivis.subList(0, zivis.size()/2);
+    
     //A receives B's computed tags:
     for (int i = 0; i < zis.size(); i++) {
       BigInteger ziPrime = s.readBigInteger();
-      hbi.add(hashPrime(ziPrime.modPow(RacInv, p).toString(16))); // hash'(ziPrime^inv(Rac))
+      hbi.add(hashPrime(ziPrime.modPow(RacInv, p).mod(p).toString(16))); // hash'(ziPrime^inv(Rac))
     }
+    
     
     return hbi;
   }
@@ -208,9 +210,9 @@ public class ATWPSICA extends ATWPSIProtocol {
 //      return result;
 //  }
   
-  // H' - second hash fn in PSI-CA
+  // H' - second hash fn in PSI-CA, map to Z
   public BigInteger hashPrime(String input) {
-    return hash(input.getBytes(), (byte)1).mod(p).modPow(t, p);
+    return hash(input.getBytes(), (byte)1);
   }
   public BigInteger hash(String input) {
     return hash(input.getBytes(), (byte)0).mod(p).modPow(t, p);
