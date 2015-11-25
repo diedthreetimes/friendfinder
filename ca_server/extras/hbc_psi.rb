@@ -48,7 +48,7 @@ class HbcPsi
       rus = bigrand(512) % @@q
       shuffle_set = set.shuffle(random: SecureRandom.hex(23).to_i(16))
       plaintext_shuffle_set = shuffle_set.collect do |x|
-        hash_str( self.modpow(hash_str(x, "\0"), rus, @@p).to_s(16), "\1")
+        hash( self.modpow(hash_str(x, "\0"), rus, @@p).to_s(16), "\1")
       end
 
       plaintext_set += plaintext_shuffle_set; # append plain text
@@ -106,8 +106,14 @@ class HbcPsi
   end
 
   # Selector should be a binary string
+  # hash map to Z*p
   def self.hash_str(s, selector = "\0")
     modpow(Digest::SHA1.hexdigest(selector+s.to_s()).hex, @@t, @@p)
+  end
+
+  # hash prime in PSICA map to Z
+  def self.hash(s, selector = "\0")
+    Digest::SHA1.hexdigest(selector+s.to_s()).hex
   end
 
   def self.bigrand(bytes)
