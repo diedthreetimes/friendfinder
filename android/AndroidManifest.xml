@@ -76,6 +76,10 @@
             android:name=".backend.DiscoveryService"
             android:enabled="true"
             android:exported="false" />
+        <service
+            android:name=".backend.ProtocolTestService"
+            android:enabled="true"
+            android:exported="false" />
 
         <meta-data
             android:name="AA_DB_NAME"
