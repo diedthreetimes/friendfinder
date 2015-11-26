@@ -1,52 +1,188 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RadioGroup xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical">
-    <RadioGroup
-        android:id="@+id/protocol_selections"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" >
-        
-	    <RadioButton android:id="@+id/radio_psi_ca"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="@string/rb_psica"
-	        android:checked="true"/>
-	    <RadioButton android:id="@+id/radio_b_bf_psi"
-	        android:layout_width="wrap_content"
-	        android:layout_height="wrap_content"
-	        android:text="@string/rb_b_bf_psi"/>
-      <RadioButton android:id="@+id/radio_b_bf_psi_ca"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/rb_b_bf_psica"/>
-      <RadioButton android:id="@+id/radio_b_psi_ca"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/rb_b_psica"/>
-      <RadioButton android:id="@+id/radio_b_bf_psi_no_v"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/rb_b_bf_psi_no_v"/>
-      <RadioButton android:id="@+id/radio_atw_psi"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/rb_atwpsi"/>
-      <RadioButton android:id="@+id/radio_atw_psi_ca_new"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/rb_atwpsica_new"/>
-      <RadioButton android:id="@+id/radio_atw_psi_ca"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:text="@string/rb_atwpsica"/>
-    
-    </RadioGroup>
-    
-     <Button
-        android:id="@+id/start_test"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+
+    <RelativeLayout
+        android:id="@+id/container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Test" />
-</RadioGroup>
+        android:orientation="vertical">
+
+     <TextView
+         android:id="@+id/ntText"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+         android:layout_alignParentTop="true"
+         android:layout_marginStart="14dp"
+         android:layout_marginTop="16dp"
+         android:text="Number of Trials"
+         android:textColor="#f6d470"
+         android:textSize="20sp"
+         android:textStyle="bold" />
+    
+    <RadioGroup
+        android:id="@+id/num_trials"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ntText"
+        android:orientation="horizontal"  >
+        
+        <RadioButton android:id="@+id/nt1"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="1"
+          android:checked="true"/>
+        
+        <RadioButton android:id="@+id/nt5"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="5"/>
+        
+        <RadioButton android:id="@+id/nt10"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="10"/>
+        
+        <RadioButton android:id="@+id/nt50"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="50"/>
+        
+        <RadioButton android:id="@+id/nt100"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="100"/>
+    </RadioGroup>
+    
+    <RadioGroup
+        android:id="@+id/num_friends"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/nfText"  >
+        
+        <RadioButton android:id="@+id/f10"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="10"
+          android:checked="true"/>
+        
+        <RadioButton android:id="@+id/f100"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="100"/>
+        
+        <RadioButton android:id="@+id/f500"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="500"/>
+        
+        <RadioButton android:id="@+id/f1000"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:text="1000"/>
+    </RadioGroup>
+
+     <Button
+         android:id="@+id/start_test"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_alignStart="@+id/text"
+         android:layout_below="@+id/protocol_selections"
+         android:text="Start Test" />
+
+     <RadioGroup
+         android:id="@+id/protocol_selections"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+         android:layout_below="@+id/text" >
+
+         <RadioButton
+             android:id="@+id/radio_psi_ca"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:checked="true"
+             android:text="@string/rb_psica" />
+
+         <RadioButton
+             android:id="@+id/radio_b_psi"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_b_psi" />
+
+         <RadioButton
+             android:id="@+id/radio_b_bf_psi"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_b_bf_psi" />
+
+         <RadioButton
+             android:id="@+id/radio_b_bf_psi_ca"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_b_bf_psica" />
+
+         <RadioButton
+             android:id="@+id/radio_b_psi_ca"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_b_psica" />
+
+         <RadioButton
+             android:id="@+id/radio_b_bf_psi_no_v"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_b_bf_psi_no_v" />
+
+         <RadioButton
+             android:id="@+id/radio_atw_psi"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_atwpsi" />
+
+         <RadioButton
+             android:id="@+id/radio_atw_psi_ca_new"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_atwpsica_new" />
+
+         <RadioButton
+             android:id="@+id/radio_atw_psi_ca"
+             android:layout_width="wrap_content"
+             android:layout_height="wrap_content"
+             android:text="@string/rb_atwpsica" />
+     </RadioGroup>
+
+     <TextView
+         android:id="@+id/text"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_alignStart="@+id/nfText"
+         android:layout_below="@+id/num_friends"
+         android:layout_marginTop="16dp"
+         android:text="Choose a protocol"
+         android:textColor="#f6d470"
+         android:textSize="20sp"
+         android:textStyle="bold" />
+
+     <TextView
+         android:id="@+id/nfText"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_alignLeft="@+id/ntText"
+         android:layout_alignStart="@+id/ntText"
+         android:layout_below="@+id/num_trials"
+         android:layout_marginTop="15dp"
+         android:text="Choose number of friends"
+         android:textColor="#f6d470"
+         android:textSize="20sp"
+         android:textStyle="bold" />
+
+</RelativeLayout>
+</ScrollView>

@@ -39,6 +39,7 @@
     
     <!-- radio button values for protocol testing -->
     <string name="rb_psica">PSICA</string>
+    <string name="rb_b_psi">Bearer PSI</string>
     <string name="rb_b_bf_psi">Bearer Capabilities Bloom Filter PSI</string>
     <string name="rb_b_bf_psica">Bearer Capabilities Bloom Filter PSICA</string>
     <string name="rb_b_psica">Bearer Capabilities PSICA (without BF)</string>
