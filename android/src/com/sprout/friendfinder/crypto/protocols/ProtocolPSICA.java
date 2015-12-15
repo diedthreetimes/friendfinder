@@ -1,5 +1,7 @@
 package com.sprout.friendfinder.crypto.protocols;
 
+import java.util.List;
+
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.crypto.PSI_C;
 import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
@@ -32,6 +34,10 @@ public class ProtocolPSICA implements Protocol {
   public void runTest(CommunicationService cs, ProtocolCallback callback, AuthorizationObject auth) {
     // TODO Auto-generated method stub
     Log.i(TAG, "Running test");
+    List<String> friends = auth.getOriginalOrder();
+    for(int i=0; i<friends.size(); i++) {
+      contactList[i] = friends.get(i);
+    }
 
     new PSICATest(cs, callback).execute(contactList);
   }

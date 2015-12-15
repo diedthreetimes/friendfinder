@@ -26,15 +26,13 @@ public class ProtocolBBFPSINoV implements Protocol {
   @Override
   public void runTest(CommunicationService cs, ProtocolCallback callback, AuthorizationObject auth) {
 
-    // TODO: need to exchange capabilities, not pre-compte
     List<BigInteger> cap = auth.getData();
-    String[] input = new String[cap.size()];
+    List<String> friends = auth.getOriginalOrder();
     Map<BigInteger, String> capMap = new HashMap<BigInteger, String>();
     for( int i=0; i < cap.size(); i++) {
-      input[i] = cap.get(i).toString();
-      capMap.put(cap.get(i), input[i]);
+      capMap.put(cap.get(i), friends.get(i));
     }
-    new BBFPSINoV(cs, capMap, callback).execute(input);
+    new BBFPSINoV(cs, capMap, callback).execute();
   }
   
   private int mNumTrials = 1;
