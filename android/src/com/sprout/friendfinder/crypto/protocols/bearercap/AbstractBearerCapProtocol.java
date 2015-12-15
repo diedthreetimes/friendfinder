@@ -47,9 +47,7 @@ public abstract class AbstractBearerCapProtocol extends AbstractPSIProtocol<Stri
   @Override
   protected List<String> conductServerTest(CommunicationService s, String... input) {
     
-    if (benchmark) {
-      onlineWatch.start();
-    }
+    onlineWatch.start();
     
     byte[] serverPK = requestor_key_pair.getPublic().getEncoded();
     
@@ -79,10 +77,12 @@ public abstract class AbstractBearerCapProtocol extends AbstractPSIProtocol<Stri
     
     List<String> intersection = verification(s, result);
     Log.i(TAG, "Number of intersection after verification: "+intersection.size());
+    
+    // making sure both sides are done before disconnecting
+    s.write("done");
+    s.readString();
 
-    if (benchmark) {
-      onlineWatch.pause();
-    }
+    onlineWatch.pause();
     
     return intersection;
   }

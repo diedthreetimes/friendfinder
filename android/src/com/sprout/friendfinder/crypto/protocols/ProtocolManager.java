@@ -1,11 +1,14 @@
 package com.sprout.friendfinder.crypto.protocols;
 
+import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -17,18 +20,39 @@ import com.sprout.friendfinder.backend.DeviceCache;
 import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
+import com.sprout.friendfinder.crypto.protocols.bearercap.CommonFriendsBearerCardinalityTest;
+import com.sprout.friendfinder.crypto.protocols.bearercap.CommonFriendsBearerTest;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.Message;
 import com.sprout.friendfinder.models.ProfileObject;
+import com.sprout.friendfinder.ui.BluetoothChatActivity;
+import com.sprout.friendfinder.ui.BluetoothMessageActivity;
 import com.sprout.friendfinder.ui.InteractionItem;
 
 public class ProtocolManager {
   
+  public static ProtocolType overrideProtocol = ProtocolType.NONE;
+  
   // going to add protocol type/policy type in policy when implemented
   public enum ProtocolType {
-    NONE(0), MSG(1), IDX(2), PSI(3), PSICA(4), BPSICA(5);
+    NONE(0),  // Least priority, run any other protocols 
+    MSG(1), // messaging protocol
+    IDX(2),  // identity protocol
+    ATWPSI(3), // authorized two-way PSI
+    BBFPSI(4), // bearer bloom filter PSI
+    BPSI(5), // bearer PSI
+    BBFPSI_No_V(6), // bearer bloom filter PSI w/o verification
+    BBFPSICA(7), // bearer bloom filter PSICA
+    BPSICA(8), // bearer PSICA
+    ATWPSICA(9), // authorized two-way PSICA
+    ATWPSICA_NEW(10), // faster authorized two-way PSICA
+    PSICA(11); // traditional PSICA without TTP
     
     int priority;
+    
+    public static ProtocolType getProtocolType(String protName) {
+      return ProtocolType.valueOf(protName);
+    }
     private ProtocolType(int val) {
       priority = val;
     }
@@ -39,6 +63,8 @@ public class ProtocolManager {
   }
   
   static final String TAG = ProtocolManager.class.getSimpleName();
+  
+  
 
   
   /**
@@ -49,6 +75,11 @@ public class ProtocolManager {
    */
   public static ProtocolType getProtocolType(Context context, DeviceCache deviceCache, Device connectedDevice) {
     Log.i(TAG, "getting type of protocol");
+    
+    // override protocol if needed
+    if(!overrideProtocol.equals(ProtocolType.NONE)) {
+      return overrideProtocol;
+    }
     
     // check for unsent msg
     // TODO: re-order these priority..
@@ -108,7 +139,19 @@ public class ProtocolManager {
   
     if(protocol.equals(ProtocolType.MSG)) {
       Log.i(TAG, "Running msg");
-      new MessageProtocol(cs, connectedDevice.getAddress(), callback).execute();
+      SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+      boolean isFg = sp.getBoolean(BluetoothMessageActivity.IS_FOREGROUND, false);
+      cs.write(isFg?1:0);
+      boolean res = (cs.readInt()!=0?true:false);
+      if(!(isFg && res)) {
+        new MessageProtocol(cs, connectedDevice.getAddress(), callback).execute();
+      } else {
+
+        Intent i = new Intent(c, BluetoothChatActivity.class);
+        i.putExtra(InteractionItem.EXTRA_DEVICE_ADDR, interaction.address);
+        c.startActivity(i);
+        callback.onComplete(0);
+      }
     } else if(protocol.equals(ProtocolType.BPSICA)) {
       Log.i(TAG, "Running bpsica");
       new CommonFriendsBearerCardinalityTest(cs, authMaps.get(AuthorizationObjectType.B_PSI_CA), callback).execute(new String[0]);
@@ -129,12 +172,21 @@ public class ProtocolManager {
         runIDXProtocol(cs, callback, authMaps, interaction);
       } 
         
-    } else if(protocol.equals(ProtocolType.PSI)) {
-      String[] input = new String[contactList.size()];
-      for( int i=0; i < contactList.size(); i++) {
-        input[i] = contactList.get(i).getUid();
+    } else if(protocol.equals(ProtocolType.ATWPSI)) {
+//      String[] input = new String[contactList.size()];
+//      for( int i=0; i < contactList.size(); i++) {
+//        input[i] = contactList.get(i).getUid();
+//      }
+//      new CommonFriendsTest(cs, authMaps.get(AuthorizationObjectType.PSI), callback, interaction).execute(input);
+
+      List<BigInteger> cap = authMaps.get(AuthorizationObjectType.B_PSI_CA).getData();
+      String[] input = new String[cap.size()];
+      Map<BigInteger, String> capMap = new HashMap<BigInteger, String>();
+      for( int i=0; i < cap.size(); i++) {
+        input[i] = cap.get(i).toString();
+        capMap.put(cap.get(i), input[i]);
       }
-      new CommonFriendsTest(cs, authMaps.get(AuthorizationObjectType.PSI), callback, interaction).execute(input);
+      new CommonFriendsBearerTest(cs, capMap, callback).execute(input);
    } else {
       throw new Exception("Invalid protocol: "+protocol);
    }
@@ -206,6 +258,19 @@ public class ProtocolManager {
 //      }
       
 //    } 
+  }
+
+  public static void runTestProtocol(ProtocolType protocolType, AuthorizationObject auth, ProtocolCallback callback,
+      CommunicationService cs) {
+    //TODO: extend this to other protocols
+    Log.i(TAG, "Running protocol: "+protocolType.toString());
+    if(protocolType.equals(ProtocolType.BPSICA)) {
+      Log.i(TAG, "Running bpsica");
+      new CommonFriendsBearerCardinalityTest(cs, auth, callback, true).execute(new String[0]);
+    } else {
+      Log.i(TAG, "Unsupported protocol: "+protocolType.toString());
+      callback.onError(null);
+    }
   }
   
 }

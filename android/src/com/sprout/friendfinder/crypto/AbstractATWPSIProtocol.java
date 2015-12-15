@@ -85,16 +85,19 @@ public abstract class AbstractATWPSIProtocol extends AbstractPSIProtocol<String,
   protected List<String> conductServerTest(CommunicationService s, String... input) {
     Log.d(TAG, "STARTING TEST");
     
-    if (benchmark) {
-      onlineWatch.start();
-    }
+    onlineWatch.start();
+    Log.i(TAG, "starting time at "+onlineWatch.getElapsedTime());
 
     sendAuth(s);
+    Log.i(TAG, "finish sending auth a "+onlineWatch.getElapsedTime());
     peerAuth = receiveAuth(s);
+    Log.i(TAG, "finish receiving auth at "+onlineWatch.getElapsedTime());
     if(peerAuth==null) return null; // TODO: check auth type
     List<BigInteger> T = sendMessage(s);
+    Log.i(TAG, "finish sending messages at "+onlineWatch.getElapsedTime());
     if(T==null) return null;
     List<BigInteger> T2 = receiveMessage(s);
+    Log.i(TAG, "finish receiving messages at "+onlineWatch.getElapsedTime());
     if(T2==null) return null;
 
     if (authObj.getOriginalOrder().size() != input.length) {
@@ -102,7 +105,14 @@ public abstract class AbstractATWPSIProtocol extends AbstractPSIProtocol<String,
       // From what I can tell, it seems to be a bug on linkedIn's side. But it could be the linkedIn ruby client as well
       Log.e(TAG, "Server authorization doesn't match provided input. Server: " + authObj.getOriginalOrder().size() + ". Input: " + input.length);
     }
+    
+    // making sure both devices are finished before computing intersection
+    s.write("done");
+    s.readString();
+    
+    onlineWatch.pause();
 
+    // TODO: computing intersection is considered online?
     Log.d(TAG, "computing intersection");
     return computeIntersectionResult(T, T2);
   }
