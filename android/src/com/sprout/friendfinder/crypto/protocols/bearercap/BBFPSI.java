@@ -22,7 +22,7 @@ import android.util.Log;
  * @author Oak
  *
  */
-public class BBFPSI extends BPSICA {
+public class BBFPSI extends BBFPSICA {
   
   Map<BigInteger, String> capMap;
   Map<ByteArrayWrapper, String> bearerCapMap = new HashMap<ByteArrayWrapper, String>();
@@ -89,7 +89,6 @@ public class BBFPSI extends BPSICA {
     List<String> res = new ArrayList<String>(hashResult.size());
     for(String hr : hashResult) {
       res.add(intersectBearerCaps.get(hr));
-      Log.i(TAG, "intersect res: "+intersectBearerCaps.get(hr));
     }
     return res;
   }
