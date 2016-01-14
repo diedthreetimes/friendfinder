@@ -58,8 +58,8 @@ public class CommonFriendsTest extends ATWPSIProtocol {
       contacts.put(id);
     }
     
-    interaction.sharedContacts = contacts;
+//    interaction.sharedContacts = contacts;
   
-    callback.onComplete(null);
+    callback.onComplete(result);
   }
 }

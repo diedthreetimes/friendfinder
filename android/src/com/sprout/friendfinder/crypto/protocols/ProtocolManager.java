@@ -179,14 +179,14 @@ public class ProtocolManager {
 //      }
 //      new CommonFriendsTest(cs, authMaps.get(AuthorizationObjectType.PSI), callback, interaction).execute(input);
 
-      List<BigInteger> cap = authMaps.get(AuthorizationObjectType.B_PSI_CA).getData();
+      List<BigInteger> cap = authMaps.get(AuthorizationObjectType.PSI).getData();
       String[] input = new String[cap.size()];
-      Map<BigInteger, String> capMap = new HashMap<BigInteger, String>();
+//      Map<BigInteger, String> capMap = new HashMap<BigInteger, String>();
       for( int i=0; i < cap.size(); i++) {
         input[i] = cap.get(i).toString();
-        capMap.put(cap.get(i), input[i]);
+//        capMap.put(cap.get(i), input[i]);
       }
-      new CommonFriendsBearerTest(cs, capMap, callback).execute(input);
+      new CommonFriendsTest(cs, authMaps.get(AuthorizationObjectType.PSI), callback, interaction).execute(input);
    } else {
       throw new Exception("Invalid protocol: "+protocol);
    }
