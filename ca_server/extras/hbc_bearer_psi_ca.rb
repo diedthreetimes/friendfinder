@@ -7,8 +7,9 @@ class HbcBPsiCa < HbcPsi
   # simple way to do this.
   def self.issue_capabilities(set)
 
-    shuffle_set = set.shuffle(random: SecureRandom.hex(23).to_i(16))
-    plaintext_set = shuffle_set.collect do |x|
+    # we dont need to shuffle because we need to match this with original order
+    #shuffle_set = set.shuffle(random: SecureRandom.hex(23).to_i(16))
+    plaintext_set = set.collect do |x|
       hash_str(x, @@secret)
     end
 
