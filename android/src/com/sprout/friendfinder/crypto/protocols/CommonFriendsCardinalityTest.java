@@ -1,17 +1,15 @@
 package com.sprout.friendfinder.crypto.protocols;
 
-import java.util.List;
-
 import android.util.Log;
 
 import com.sprout.finderlib.communication.CommunicationService;
+import com.sprout.finderlib.crypto.PSI_C;
 import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.common.Config;
-import com.sprout.friendfinder.crypto.ATWPSICAProtocol;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 
-public class CommonFriendsCardinalityTest extends ATWPSICAProtocol {
+public class CommonFriendsCardinalityTest extends PSI_C {
   
   AuthorizationObject commonFriendsAuth;
   ProtocolCallback callback;
@@ -21,7 +19,7 @@ public class CommonFriendsCardinalityTest extends ATWPSICAProtocol {
   public CommonFriendsCardinalityTest(CommunicationService s, AuthorizationObject psicaAuth, 
       ProtocolCallback callback) {
     // check authObject type
-    super(s, psicaAuth);
+    super(s, false);
     if(psicaAuth.getType() != AuthorizationObjectType.PSI_CA) {
       String errorMsg = "auth mismatched";
       Log.e(TAG,  errorMsg);
@@ -33,7 +31,7 @@ public class CommonFriendsCardinalityTest extends ATWPSICAProtocol {
   }
   
   @Override
-  public List<String> doInBackground(String... params) {
+  public Integer doInBackground(String... params) {
     try {
       return super.doInBackground(params);
     } catch (Exception e) {
@@ -48,14 +46,14 @@ public class CommonFriendsCardinalityTest extends ATWPSICAProtocol {
   }
 
   @Override
-  public void onPostExecute(List<String> result) {
+  public void onPostExecute(Integer result) {
     if(result == null) {
       callback.onError(null);
       return;
     }
     Log.i(TAG, "Common friends cardinality protocol complete");
-    Log.i(TAG, result.size()+" common friends");
-    callback.onComplete(null);
+    Log.i(TAG, result +" common friends");
+    callback.onComplete(result);
     
     // check if peer wanna run PSI
     // TODO: now just hardcode the policy and policy is the same on both sides and assume PSI always done after PSI-CA

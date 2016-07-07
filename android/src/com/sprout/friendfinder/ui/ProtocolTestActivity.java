@@ -142,13 +142,14 @@ public class ProtocolTestActivity extends Activity {
       return;
     }
 
-    if (mBluetoothAdapter.getScanMode() !=
-        BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-      Toast.makeText(this, "Cant start the test because the bluetooth is off", Toast.LENGTH_SHORT).show();
-    }
-    else{
-      doPostDiscoverable(protocol);
-    }
+    doPostDiscoverable(protocol);
+//    if (mBluetoothAdapter.getScanMode() !=
+//        BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+//      Toast.makeText(this, "Cant start the test because the bluetooth is off", Toast.LENGTH_SHORT).show();
+//    }
+//    else{
+//      doPostDiscoverable(protocol);
+//    }
   }
   
   /**
@@ -263,7 +264,6 @@ public class ProtocolTestActivity extends Activity {
       case ProtocolTestService.MESSAGE_STATE_CHANGE:
         switch (msg.arg1) {
         case ProtocolTestService.STATE_RUNNING:
-          progressDialog.setMessage("Discovering...");
           break;
           
         case ProtocolTestService.STATE_READY:
@@ -273,12 +273,13 @@ public class ProtocolTestActivity extends Activity {
         case ProtocolTestService.STATE_COMPLETED:
           
           progressDialog.setMessage(mService.result.toString());
-          mService.stopSelf();
           doUnbindService();
           break;
         case ProtocolTestService.STATE_SYNC:
           progressDialog.setMessage("Downloading authorization object");
           
+        case ProtocolTestService.STATE_DISABLED:
+          progressDialog.setMessage("Communication Service is disabled");
         }
         break;
         
@@ -328,6 +329,10 @@ public class ProtocolTestActivity extends Activity {
       case CommunicationService.MESSAGE_FAILED:
         // When a message fails we assume we need to reset
         Log.e(TAG, "Message failed");
+        
+        // TODO: correct way to do this?
+        // run() already removed the device, so skipping to the next device
+        mService.run();
 
         // TODO: Perform a reset (remove the peer, etc)
         break;

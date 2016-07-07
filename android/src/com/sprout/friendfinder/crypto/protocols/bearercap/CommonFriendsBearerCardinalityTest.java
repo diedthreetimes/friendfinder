@@ -63,7 +63,7 @@ public class CommonFriendsBearerCardinalityTest extends BPSICA {
       return;
     } 
     Log.i(TAG, "Common friends: " + result.size());
-    callback.onComplete(null);
+    callback.onComplete(result.size());
   }
 
 }

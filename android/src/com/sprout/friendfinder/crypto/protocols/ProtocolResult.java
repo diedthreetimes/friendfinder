@@ -43,6 +43,10 @@ public class ProtocolResult {
     commonFriends = new ArrayList<String>(cf);
   }
   
+  public List<String> getCommonFriends() {
+    return commonFriends;
+  }
+  
   @Override
   public String toString() {
     String res = "";

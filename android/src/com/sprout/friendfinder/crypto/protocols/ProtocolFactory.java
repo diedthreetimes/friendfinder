@@ -1,7 +1,11 @@
 package com.sprout.friendfinder.crypto.protocols;
 
+import java.util.List;
+
 import com.activeandroid.util.Log;
+import com.sprout.finderlib.communication.Device;
 import com.sprout.friendfinder.crypto.protocols.ProtocolManager.ProtocolType;
+import com.sprout.friendfinder.models.ProfileObject;
 
 public class ProtocolFactory {
   
@@ -10,6 +14,21 @@ public class ProtocolFactory {
   public static Protocol getProtocol(String protocolName, String[] friends) {
     return getProtocol(ProtocolType.getProtocolType(protocolName), friends);
     
+  }
+  
+  public static Protocol getProtocol(ProtocolType type, List<ProfileObject> contactList, Device connectedDevice) {
+    if(type.equals(ProtocolType.MSG)) {
+      return new ProtocolMessaging(connectedDevice);
+    } else return getProtocol(type, contactList);
+  }
+  
+  public static Protocol getProtocol(ProtocolType type, List<ProfileObject> contactList) {
+
+    String[] input = new String[contactList.size()];
+    for( int i=0; i < contactList.size(); i++) {
+      input[i] = contactList.get(i).getUid();
+    }
+    return getProtocol(type, input);
   }
 
   public static Protocol getProtocol(ProtocolType type, String[] friends) {
