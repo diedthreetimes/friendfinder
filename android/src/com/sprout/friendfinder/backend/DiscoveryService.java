@@ -43,13 +43,18 @@ import com.sprout.finderlib.communication.BluetoothService;
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
+import com.sprout.finderlib.communication.WifiDirectService;
+import com.sprout.finderlib.communication.WifiService;
 import com.sprout.friendfinder.R;
 import com.sprout.friendfinder.common.Config;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
 import com.sprout.friendfinder.crypto.AuthorizationObject.AuthorizationObjectType;
 import com.sprout.friendfinder.crypto.protocols.NegotiationProtocol;
+import com.sprout.friendfinder.crypto.protocols.Protocol;
+import com.sprout.friendfinder.crypto.protocols.ProtocolFactory;
 import com.sprout.friendfinder.crypto.protocols.ProtocolManager;
 import com.sprout.friendfinder.crypto.protocols.ProtocolManager.ProtocolType;
+import com.sprout.friendfinder.crypto.protocols.ProtocolResult;
 import com.sprout.friendfinder.models.ContactsListObject;
 import com.sprout.friendfinder.models.Interaction;
 import com.sprout.friendfinder.models.ProfileObject;
@@ -82,6 +87,7 @@ public class DiscoveryService extends Service {
   public static final String ACTION_LOGOUT = "action_logout";
   public static final String ACTION_RESET_CACHE = "action_cache";
   public static final String ACTION_RESET_CACHE_PEERS = "action_cache_peers";
+  public static final String ACTION_RESTART_TEST = "action_restart_test";
   
   /***************************/
   /* ***   Preferences   *** */
@@ -192,6 +198,15 @@ public class DiscoveryService extends Service {
       PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().remove(InteractionItem.EXCHANGE_IDENTITY_ADDR).apply();
     } else if (intent.getAction().equals(ACTION_RESET_CACHE_PEERS)) {
       mDeviceCache.clear();
+    } else if (intent.getAction().equals(ACTION_RESTART_TEST)) {
+      mMessageService = null;
+      mDeviceCache = null;
+  
+      PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().remove(LAST_SCAN_DEVICES_PREF).apply();
+      PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit().remove(InteractionItem.EXCHANGE_IDENTITY_ADDR).apply();
+
+      stop();
+      initialize();
     }
 
     // This is useful to ensure that our service stays alive. 
@@ -427,6 +442,7 @@ public class DiscoveryService extends Service {
   
   // This may not belong as it's own function. Instead, we should simply do this in a timer.
   private void searchForPeers() {
+    discoverer = true;
     if(D) Log.i(TAG, "Searching for peers");
     
     mMessageService.discoverPeers(new CommunicationService.Callback(){
@@ -627,9 +643,9 @@ public class DiscoveryService extends Service {
     
     if (mMessageService == null) {
       if(benchmarkBandwidth){
-        mMessageService = new BluetoothServiceLogger(this, new mHandler(DiscoveryService.this));
+        mMessageService = new WifiService(this, new mHandler(DiscoveryService.this));
       }else {
-        mMessageService =  new BluetoothService(this, new mHandler(DiscoveryService.this));
+        mMessageService =  new WifiService(this, new mHandler(DiscoveryService.this));
       }
     }
 
@@ -701,6 +717,8 @@ public class DiscoveryService extends Service {
   private ScanResult mLastScanDevices; // would love to use mLastScanResult but it gets modified/removed at the end
   private Device mRunningDevice;
   
+  private boolean discoverer = false;
+  
   // Called when discovery completes to run all discovered devices
   private void runAll(ScanResult discovered) {
     Log.i(TAG, "LAST_SCAN_DEVICES_PREF: "+PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).getStringSet(LAST_SCAN_DEVICES_PREF, null));
@@ -713,6 +731,8 @@ public class DiscoveryService extends Service {
   }
   
   private void notifyChanges() {
+    if(!discoverer) return;
+    Log.i(TAG, "You are discoverer, store last scan devices");
     if(mLastScanDevices == null) {
       Log.i(TAG, "mLastScanDevices is null - most likely you are being discovered or no device found in last scan");
       return;
@@ -887,7 +907,7 @@ public class DiscoveryService extends Service {
         public void onComplete(Object o) {
           try {
             Log.i(TAG, "Successfully compute cardinality, now go to PSI");
-            runProtocol(ProtocolType.PSI);
+            runProtocol(ProtocolType.ATWPSI);
           } catch (Exception e) {
             e.printStackTrace();
             run();
@@ -910,10 +930,11 @@ public class DiscoveryService extends Service {
         }
       };
     
-    } else if(protocolType.equals(ProtocolType.PSI)) {
+    } else if(protocolType.equals(ProtocolType.ATWPSI)) {
       return new ProtocolCallback() {
 
         // After this protocol completes, we enter the ready state
+        @SuppressWarnings("unchecked")
         @Override
         public void onComplete(Object o) {
           if(V) Log.i(TAG, "Common friend detection complete.");
@@ -921,6 +942,17 @@ public class DiscoveryService extends Service {
           if (!benchmarkBandwidth) {// overloaded for now
             mDeviceCache.add(mRunningDevice);
           } 
+
+          ContactsListObject contacts = new ContactsListObject();
+          contacts.save();
+          
+          ProtocolResult result = (ProtocolResult) o;
+
+          for (String id : result.getCommonFriends()){          
+            contacts.put(id);
+          }
+          
+          interaction.sharedContacts = contacts;
           
           interaction.failed = false;
           interaction.save();
@@ -955,7 +987,7 @@ public class DiscoveryService extends Service {
           run();
         }
       };
-    }   else if(protocolType.equals(ProtocolType.MSG)) {
+    } else if(protocolType.equals(ProtocolType.MSG)) {
       return new ProtocolCallback() {
 
         @Override
@@ -964,7 +996,8 @@ public class DiscoveryService extends Service {
 
             SharedPreferences  mPrefs = PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this);
             Set<String> anm = new HashSet<String>(mPrefs.getStringSet(BluetoothMessageActivity.ADDRESS_NEW_MESSAGES, new HashSet<String>()));
-            anm.add(interaction.address);
+            Log.d(TAG, "Setting addr: "+mRunningDevice.getAddress());
+            anm.add(mRunningDevice.getAddress());
             PreferenceManager.getDefaultSharedPreferences(DiscoveryService.this).edit()
             .putStringSet(BluetoothMessageActivity.ADDRESS_NEW_MESSAGES, anm)
             .apply();
@@ -1002,19 +1035,22 @@ public class DiscoveryService extends Service {
   
   private void runProtocol(ProtocolType protocolType) throws Exception  {
     final Interaction interaction;
-    if(protocolType.equals(ProtocolType.IDX) || protocolType.equals(ProtocolType.MSG)) {
+    if(protocolType.equals(ProtocolType.IDX)) {
       //TODO: using address is wrong, maybe need to use id instead
+      //TODO: currently IDX doesnt work cuz I cant get firstname and lastname from twitter api...
       interaction = (Interaction) new Select().from(Interaction.class).where("address=?", mRunningDevice.getAddress()).orderBy("timestamp DESC").executeSingle();
+      ProtocolManager.runProtocol(protocolType, mAuthObj, getProtocolCallback(protocolType, interaction), this, mMessageService, mRunningDevice, mContactList, interaction);
     } else {
+      // TODO: do we need to create new interaction every time we call any protocol?
       interaction = new Interaction();
       interaction.address = mRunningDevice.getAddress();
       interaction.timestamp = Calendar.getInstance();
+      ProtocolCallback callback = getProtocolCallback(protocolType, interaction);
+      
+      Log.i(TAG, "about to run protocol "+protocolType);
+      Protocol protocol = ProtocolFactory.getProtocol(protocolType, mContactList, mRunningDevice);
+      protocol.runTest(mMessageService, callback, mAuthObj.get(protocol.getAuthType()));
     }
-    
-    ProtocolCallback callback = getProtocolCallback(protocolType, interaction);
-    
-    Log.i(TAG, "about to run protocol "+protocolType);
-    ProtocolManager.runProtocol(protocolType, mAuthObj, callback, this, mMessageService, mRunningDevice, mContactList, interaction);
   }
 
   private void onDisabled() {
@@ -1049,6 +1085,8 @@ public class DiscoveryService extends Service {
 
           // Is it possible that this will be fired while we are already connecting?
           // YES, not sure what the right thing to do is in this case.
+          
+          target.discoverer = false;
           
           target.connected();
       

@@ -16,11 +16,14 @@ import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.util.Log;
 
 import com.sprout.finderlib.communication.BluetoothServiceLogger;
 import com.sprout.finderlib.communication.CommunicationService;
 import com.sprout.finderlib.communication.Device;
+import com.sprout.finderlib.communication.WifiDirectService;
+import com.sprout.finderlib.communication.WifiService;
 import com.sprout.friendfinder.backend.DiscoveryService.ProfileDownloadCallback;
 import com.sprout.friendfinder.backend.DiscoveryService.ProtocolCallback;
 import com.sprout.friendfinder.crypto.AuthorizationObject;
@@ -145,7 +148,11 @@ public class ProtocolTestService extends Service {
   public void onDestroy() {
     if(L) Log.i(TAG, "Service being destroyed");
 
-    stop();
+    if (mMessageService != null) {
+      mMessageService.stopDiscovery();
+      mMessageService.destroy();
+      mMessageService = null;
+    }
     discoveryTimer.cancel();
   }
 
@@ -200,7 +207,7 @@ public class ProtocolTestService extends Service {
       private ScanResult result = null;
       @Override
       public void onPeerDiscovered(Device peer) { 
-        if (V) Log.i(TAG, "Device: " + peer.getName() + " found, (But not verified)");
+        if (V) Log.i(TAG, "weird Device: " + peer.getName() + " found, (But not verified)");
       } // We don't use this function, since these devices may not be part of our app   
 
       // TODO: when no device is found, this code doesnt get executed...
@@ -324,7 +331,7 @@ public class ProtocolTestService extends Service {
     Log.i(TAG, "setting handler");
     mHandler = mHandler2;
     
-    mMessageService = new BluetoothServiceLogger(this, mHandler);
+    mMessageService = new WifiDirectService(this, mHandler);
     
   }
   
@@ -374,6 +381,15 @@ public class ProtocolTestService extends Service {
     
     mMessageService.start(false);
     
+    if(mMessageService instanceof WifiService) {
+      // we have to make sure it registers the service
+      
+      WifiService wService = (WifiService) mMessageService;
+      while(!wService.isRegistered()) {
+        Log.i(TAG, "wifi service not registered");
+        SystemClock.sleep(1000);
+      }
+    }
     long now = System.currentTimeMillis();
     
     // TODO: prolly dont need all of these below codes for here but its ok for now
@@ -389,6 +405,7 @@ public class ProtocolTestService extends Service {
 
         @Override
         public void run() {
+          // TODO: what to do if its in connected state
           if(V) Log.i(TAG, "Discovery timer executing");
           lastDiscovery = System.currentTimeMillis();
           searchForPeers();
@@ -407,7 +424,7 @@ public class ProtocolTestService extends Service {
   }
   private ScanResult mLastScanResult; // TODO: Expose this for adding "available" peers ui
   
-  private void run() {
+  public void run() {
     setState(STATE_RUNNING);
     // While in the run state we should do the following.
     // Connect to a single peer that was discovered, and run the protocol with that peer
@@ -416,6 +433,13 @@ public class ProtocolTestService extends Service {
     mMessageService.stopDiscovery();        
     
     if(D) Log.i(TAG, "Discovery stopped. attempting to connect");
+    
+    if(mLastScanResult == null) {
+      if(V) Log.d(TAG, "No scan result");
+      ready();
+      return;
+      
+    }
     
     Iterator<Device> i = mLastScanResult.iterator();
     
@@ -493,15 +517,15 @@ public class ProtocolTestService extends Service {
         
         Log.i(TAG, "Result: "+result.toString());
         
-        stop();
-        
         setState(STATE_COMPLETED);
+        
+        stopSelf();
         
       }
     };
     
     try {
-      testProtocol.config(numTrials, true);
+      testProtocol.config(numTrials, false);
       testProtocol.runTest(mMessageService, callback, auth);
     } catch(Exception e) {
       callback.onError(null);
