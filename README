@@ -1,7 +1,7 @@
-In order to use the android app you need the FinderLib from zeus
+In order to use the android app you need the FinderLib
 
 
-$ git clone https://#{your-user-name-here}@zeus.ics.uci.edu/git/finderlib.git
+$ git clone https://github.com/diedthreetimes/finderlib
 
 
 Add this library along with the android app to your eclipse workspace.
@@ -15,3 +15,8 @@ Revision: 514
 
 In addition we also have our own branch of SocialAuth (java implementation)
 $ git clone git@github.com:/diedthreetimes/socialauth.git
+
+
+# Note: October 2019
+# Twitter and LinkedIn App Credentials have been revoked.
+# To use this app with those services update the files found in this commit.
